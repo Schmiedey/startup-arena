@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Share2, Swords, Trophy, MessageCircle } from "lucide-react";
+import { Share2, Swords, Trophy, MessageCircle, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Idea } from "@/lib/types";
+import { battlePath } from "@/lib/seo";
 
 interface BattleResultCardProps {
   winner: Idea;
@@ -12,6 +13,14 @@ interface BattleResultCardProps {
   battleId: string | null;
   winnerDelta: number;
   loserDelta: number;
+  prediction?: {
+    correct: boolean | null;
+    ranked: boolean;
+    eloBefore: number;
+    eloAfter: number;
+    eloDelta: number;
+    streak: number;
+  };
   shared: boolean;
   onShare: () => void;
   onNext?: () => void;
@@ -24,6 +33,7 @@ export function BattleResultCard({
   battleId,
   winnerDelta,
   loserDelta,
+  prediction,
   shared,
   onShare,
   onNext,
@@ -76,6 +86,38 @@ export function BattleResultCard({
           </div>
         </div>
       </div>
+
+      {prediction && (
+        <div className="border-t border-fire/15 bg-background/70 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <Target className="mt-0.5 h-4 w-4 shrink-0 text-fire" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">
+                {!prediction.ranked
+                  ? "Provisional guess."
+                  : prediction.correct
+                    ? "You matched the crowd signal."
+                    : "You went against the crowd signal."}
+              </p>
+              {prediction.ranked ? (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Predictor Elo:{" "}
+                  <span className="font-mono text-foreground">{prediction.eloAfter}</span>{" "}
+                  <span className={prediction.eloDelta >= 0 ? "font-mono text-emerald-400" : "font-mono text-red-400"}>
+                    {prediction.eloDelta >= 0 ? "+" : ""}{prediction.eloDelta}
+                  </span>
+                  {" "}from {prediction.eloBefore}
+                  {prediction.streak > 1 ? ` · ${prediction.streak} correct in a row` : ""}
+                </p>
+              ) : (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  This matchup needs more prior signal before it affects your predictor Elo.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {onReason && !reasonSubmitted && (
         <div className="border-t border-fire/15 px-5 py-4">
@@ -139,7 +181,7 @@ export function BattleResultCard({
           )}
           {battleId && (
             <Link
-              href={`/battle/${battleId}`}
+              href={battlePath({ id: battleId, idea_a: winner, idea_b: loser })}
               className="inline-flex items-center gap-2 border border-border/40 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:border-fire/30 hover:text-fire"
             >
               <Swords className="h-3.5 w-3.5" />

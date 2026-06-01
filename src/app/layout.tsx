@@ -9,6 +9,15 @@ import { Navbar } from "@/components/navbar";
 import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
+import { JsonLd } from "@/components/json-ld";
+import {
+  DEFAULT_DESCRIPTION,
+  DEFAULT_OG_IMAGE,
+  DEFAULT_TITLE,
+  SITE_NAME,
+  SITE_URL,
+  siteJsonLd,
+} from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,30 +36,55 @@ const chakraPetch = Chakra_Petch({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.AUTH_URL ?? "https://likelyr.com"),
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   title: {
-    default: "Likelyr — Find what's likelier to succeed",
-    template: "%s — Likelyr",
+    default: DEFAULT_TITLE,
+    template: `%s - ${SITE_NAME}`,
   },
-  description:
-    "Battle ideas head-to-head and let the crowd decide what's likelier to succeed.",
+  description: DEFAULT_DESCRIPTION,
+  keywords: [
+    "startup ideas",
+    "startup validation",
+    "idea validation",
+    "business ideas",
+    "startup rankings",
+    "startup leaderboard",
+    "founder feedback",
+    "Elo rankings",
+  ],
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "Startup validation",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Likelyr — Find what's likelier to succeed",
-    description:
-      "Battle ideas head-to-head and let the crowd decide what's likelier to succeed.",
-    url: "https://likelyr.com",
-    siteName: "Likelyr",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    locale: "en_US",
     type: "website",
+    images: [DEFAULT_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Likelyr — Find what's likelier to succeed",
-    description:
-      "Battle ideas head-to-head and let the crowd decide what's likelier to succeed.",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE.url],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -68,11 +102,12 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <SessionProvider>
+            <JsonLd data={siteJsonLd} />
             <Navbar />
             <main className="flex-1">{children}</main>
             <footer className="border-t border-border/30 py-8 text-center">
               <div className="mx-auto max-w-5xl px-6">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground/50">Likelyr — find what is likelier to succeed</p>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground/50">Likelyr - startup idea validation by real votes</p>
                 <nav className="mt-3 flex items-center justify-center gap-4 text-xs text-muted-foreground/60">
                   <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
                   <span>·</span>

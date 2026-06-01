@@ -11,7 +11,19 @@ export async function GET() {
 
   try {
     const userResult = await sql`
-      SELECT id, name, email, image, plan, subscription_status, launch_pass_purchased_at
+      SELECT
+        id,
+        name,
+        email,
+        image,
+        plan,
+        subscription_status,
+        launch_pass_purchased_at,
+        prediction_elo,
+        prediction_wins,
+        prediction_losses,
+        prediction_streak,
+        best_prediction_streak
       FROM users
       WHERE email = ${session.user.email}
     `;
@@ -40,6 +52,11 @@ export async function GET() {
           : user.launch_pass_purchased_at || user.plan === "launch"
             ? "launch"
             : "free",
+        prediction_elo: Number(user.prediction_elo ?? 1000),
+        prediction_wins: Number(user.prediction_wins ?? 0),
+        prediction_losses: Number(user.prediction_losses ?? 0),
+        prediction_streak: Number(user.prediction_streak ?? 0),
+        best_prediction_streak: Number(user.best_prediction_streak ?? 0),
       },
       ideas_count: Number(ideasResult.rows[0].count),
       votes_today: Number(votesTodayResult.rows[0].count),

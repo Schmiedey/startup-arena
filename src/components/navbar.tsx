@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { CreditCard, Trophy, Plus, Home, LogOut, LayoutDashboard, Sun, Moon, Users, Shield, Menu, X } from "lucide-react";
+import { Trophy, Plus, Home, LogOut, LayoutDashboard, Sun, Moon, Users, Shield, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { useTheme } from "@/components/theme-provider";
@@ -16,14 +16,13 @@ const links = [
   { href: "/leaderboard", label: "Ranks", icon: Trophy },
   { href: "/founders", label: "Founders", icon: Users },
   { href: "/submit", label: "Submit", icon: Plus },
-  { href: "/pricing", label: "Pricing", icon: CreditCard },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
-const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -81,7 +80,8 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
               className="ml-1 flex h-7 w-7 items-center justify-center rounded-none border border-border/30 text-muted-foreground transition-colors hover:bg-panel hover:text-foreground hover:border-fire/30"
               aria-label="Toggle theme"
             >
-              {resolvedTheme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              <Sun className="hidden h-3.5 w-3.5 dark:block" />
+              <Moon className="h-3.5 w-3.5 dark:hidden" />
             </button>
 
             {session?.user ? (
@@ -189,8 +189,10 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
                 onClick={() => { setTheme(resolvedTheme === "dark" ? "light" : "dark"); }}
                 className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
               >
-                {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+                <Sun className="hidden h-4 w-4 dark:block" />
+                <Moon className="h-4 w-4 dark:hidden" />
+                <span className="hidden dark:inline">Light mode</span>
+                <span className="dark:hidden">Dark mode</span>
               </button>
             </div>
 

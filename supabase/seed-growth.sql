@@ -1,7 +1,10 @@
 -- Launch inventory for Likelyr.
 -- Safe to run after schema.sql. These rows are anonymous and can be edited/deleted later.
+-- Existing names are skipped so the seed can be re-run.
 
-INSERT INTO ideas (name, pitch, target_customer, problem, revenue_model, category, stage) VALUES
+INSERT INTO ideas (name, pitch, target_customer, problem, revenue_model, category, stage)
+SELECT name, pitch, target_customer, problem, revenue_model, category, stage
+FROM (VALUES
 ('LeadSniper AI', 'Finds local businesses with weak websites and drafts personalized outreach.', 'Freelance web designers and small agencies', 'Prospecting takes hours and most cold emails are generic.', '$49/month SaaS subscription', 'AI', 'MVP'),
 ('QuietCRM', 'A lightweight CRM for solo consultants who hate sales software.', 'Independent consultants', 'Most CRMs are too bloated for one-person businesses.', '$12/month subscription', 'SaaS', 'Launched'),
 ('TutorCredits', 'Students earn credits by helping classmates and spend credits when stuck.', 'College STEM students', 'Tutoring is expensive and peer help is fragmented.', '10% fee on purchased credit packs', 'Education', 'Idea'),
@@ -51,4 +54,8 @@ INSERT INTO ideas (name, pitch, target_customer, problem, revenue_model, categor
 ('MeetCute Map', 'Opt-in map of low-pressure local singles events.', 'Urban singles tired of dating apps', 'Dating apps are high-friction and low-trust.', 'Event affiliate fees', 'Consumer App', 'Idea'),
 ('LaunchLedger', 'Tracks every launch channel and ranks ROI by signup quality.', 'Indie founders', 'Founders do not know which launch channels create real users.', '$19/month subscription', 'SaaS', 'Idea'),
 ('AI Policy Bot', 'Slack bot that answers company AI usage policy questions.', 'Operations leaders', 'Employees do not read policy docs before using AI tools.', '$3/user/month', 'AI', 'MVP'),
-('CraftCart', 'Simple storefronts for local makers selling at markets.', 'Local craft vendors', 'Market vendors need lightweight commerce without Shopify complexity.', '$15/month subscription', 'E-commerce', 'Idea');
+('CraftCart', 'Simple storefronts for local makers selling at markets.', 'Local craft vendors', 'Market vendors need lightweight commerce without Shopify complexity.', '$15/month subscription', 'E-commerce', 'Idea')
+) AS seed(name, pitch, target_customer, problem, revenue_model, category, stage)
+WHERE NOT EXISTS (
+  SELECT 1 FROM ideas WHERE ideas.name = seed.name
+);

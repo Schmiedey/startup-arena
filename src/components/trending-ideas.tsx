@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Idea } from "@/lib/types";
 import { getWinRate, getSurvivalRating } from "@/lib/elo";
 import { RefreshCw } from "lucide-react";
+import { ideaPath } from "@/lib/seo";
 
 export function TrendingIdeas() {
   const [ideas, setIdeas] = useState<Idea[]>([]);
@@ -80,7 +81,7 @@ export function TrendingIdeas() {
         const winRate = getWinRate(idea.wins, idea.losses);
         const survival = getSurvivalRating(idea.elo_score);
         return (
-          <Link key={idea.id} href={`/idea/${idea.id}`} className="group">
+          <Link key={idea.id} href={ideaPath(idea)} className="group">
             <div className="relative h-full border border-border/30 bg-card/20 p-5 transition-all duration-300 hover:border-fire/30 hover:bg-panel/20 hover:shadow-lg dark:hover:shadow-fire/5">
               {i === 0 && (
                 <div className="absolute -left-px -top-px rounded-none bg-fire/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-fire">

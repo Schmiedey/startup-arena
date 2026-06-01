@@ -13,6 +13,7 @@ import { ArrowLeft, Share2, TrendingUp, Zap, Target, Loader2, MessageCircle, Pen
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { trackClientEvent } from "@/lib/analytics-client";
+import { extractEntityId, founderPath } from "@/lib/seo";
 
 interface VoteReason {
   reason: string;
@@ -34,7 +35,7 @@ export default function IdeaPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
-  const id = params.id as string;
+  const id = extractEntityId(params.id as string);
   const [idea, setIdea] = useState<Idea | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [reasons, setReasons] = useState<VoteReason[]>([]);
@@ -225,8 +226,11 @@ export default function IdeaPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className={STAGE_COLORS[idea.stage] ?? ""}>{idea.stage}</Badge>
             <Badge variant="secondary" className={`${CATEGORY_COLORS[idea.category] ?? ""} text-xs`}>{idea.category}</Badge>
-            {idea.user_name && (
-              <Link href={`/founder/${idea.user_id}`} className="text-xs text-muted-foreground hover:text-fire transition-colors">
+            {idea.user_id && idea.user_name && (
+              <Link
+                href={founderPath({ id: idea.user_id, name: idea.user_name })}
+                className="text-xs text-muted-foreground hover:text-fire transition-colors"
+              >
                 by {idea.user_name}
               </Link>
             )}

@@ -11,6 +11,7 @@ import { RefreshCw, Loader2, MessageSquare, MessageCircle, Share2, ArrowLeft } f
 import { LikelyrLogo } from "@/components/likelyr-logo";
 import Link from "next/link";
 import { BattleResultCard } from "@/components/battle-result-card";
+import { extractEntityId } from "@/lib/seo";
 
 interface BattleData {
   idea_a: Idea;
@@ -48,7 +49,7 @@ async function fetchBattleData(id: string): Promise<{
 
 export default function SharedBattlePage() {
   const params = useParams();
-  const id = params.id as string;
+  const id = extractEntityId(params.id as string);
   const { data: session } = useSession();
   const [battle, setBattle] = useState<BattleData | null>(null);
   const [voted, setVoted] = useState(false);

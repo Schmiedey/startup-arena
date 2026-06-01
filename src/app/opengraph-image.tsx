@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Likelyr - find what's likelier to succeed";
+export const alt = "Likelyr startup idea validation by real votes";
 export const size = {
   width: 1200,
   height: 630,
@@ -43,10 +43,10 @@ export default function Image() {
         </div>
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 20, maxWidth: 900 }}>
           <div style={{ color: "#ff8a4c", fontSize: 24, fontWeight: 900, textTransform: "uppercase", letterSpacing: 4 }}>
-            Find what is likelier
+            Startup idea validation
           </div>
           <div style={{ fontSize: 88, lineHeight: 0.92, fontWeight: 950, letterSpacing: -3 }}>
-            Battle ideas. Find the winner.
+            Ideas ranked by real votes.
           </div>
           <div style={{ fontSize: 28, lineHeight: 1.25, color: "#c7bdb7", maxWidth: 760 }}>
             Strangers vote on which idea is more likely to make money.

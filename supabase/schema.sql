@@ -13,6 +13,11 @@ CREATE TABLE IF NOT EXISTS users (
   stripe_subscription_id TEXT,
   subscription_status TEXT,
   launch_pass_purchased_at TIMESTAMPTZ,
+  prediction_elo INTEGER DEFAULT 1000,
+  prediction_wins INTEGER DEFAULT 0,
+  prediction_losses INTEGER DEFAULT 0,
+  prediction_streak INTEGER DEFAULT 0,
+  best_prediction_streak INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -24,6 +29,11 @@ DO $$ BEGIN
   ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS launch_pass_purchased_at TIMESTAMPTZ;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_elo INTEGER DEFAULT 1000;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_wins INTEGER DEFAULT 0;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_losses INTEGER DEFAULT 0;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_streak INTEGER DEFAULT 0;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS best_prediction_streak INTEGER DEFAULT 0;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
@@ -87,6 +97,11 @@ CREATE TABLE IF NOT EXISTS votes (
   battle_id UUID REFERENCES battles(id) NOT NULL,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   winner_id UUID REFERENCES ideas(id) NOT NULL,
+  prediction_target_id UUID REFERENCES ideas(id),
+  prediction_correct BOOLEAN,
+  prediction_ranked BOOLEAN DEFAULT TRUE,
+  voter_elo_before INTEGER,
+  voter_elo_after INTEGER,
   reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -130,8 +145,10 @@ CREATE INDEX IF NOT EXISTS idx_ideas_elo ON ideas(elo_score DESC);
 CREATE INDEX IF NOT EXISTS idx_ideas_category ON ideas(category);
 CREATE INDEX IF NOT EXISTS idx_votes_battle_id ON votes(battle_id);
 CREATE INDEX IF NOT EXISTS idx_votes_user_id ON votes(user_id);
+CREATE INDEX IF NOT EXISTS idx_votes_prediction_correct ON votes(prediction_correct);
 CREATE INDEX IF NOT EXISTS idx_comments_idea_id ON comments(idea_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_prediction_elo ON users(prediction_elo DESC);
 CREATE INDEX IF NOT EXISTS idx_users_stripe_customer_id ON users(stripe_customer_id);
 CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription_id ON users(stripe_subscription_id);
 CREATE INDEX IF NOT EXISTS idx_api_rate_limits_created_at ON api_rate_limits(created_at);

@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Idea, Category, CATEGORIES } from "@/lib/types";
+import { Idea, Category, CATEGORIES, Predictor } from "@/lib/types";
 import { IdeaCard } from "@/components/idea-card";
 import { Input } from "@/components/ui/input";
-import { Flame, Loader2, Search, Trophy, Users, TrendingUp, Crown, ChevronDown } from "lucide-react";
+import { Flame, Loader2, Search, Trophy, Users, TrendingUp, Crown, ChevronDown, Target } from "lucide-react";
 import Link from "next/link";
 import { getWinRate, getSurvivalRating } from "@/lib/elo";
+import { formatPredictionTier } from "@/lib/prediction";
+import { ideaPath } from "@/lib/seo";
+import { Avatar } from "@/components/avatar";
 
 type Tab = "top" | "trending" | "divisive" | "new";
+type Board = "ideas" | "predictors";
 
 export default function LeaderboardPage() {
   const [ideas, setIdeas] = useState<Idea[]>([]);
@@ -20,6 +24,9 @@ export default function LeaderboardPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category | "all">("all");
   const [tab, setTab] = useState<Tab>("top");
+  const [board, setBoard] = useState<Board>("ideas");
+  const [predictors, setPredictors] = useState<Predictor[]>([]);
+  const [predictorsLoading, setPredictorsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchIdeas() {
@@ -42,6 +49,30 @@ export default function LeaderboardPage() {
     }
     fetchIdeas();
   }, [category, tab]);
+
+  useEffect(() => {
+    if (board !== "predictors") return;
+
+    let cancelled = false;
+    fetch("/api/predictors?limit=50")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load predictors");
+        return res.json() as Promise<Predictor[]>;
+      })
+      .then((data) => {
+        if (!cancelled) setPredictors(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPredictors([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPredictorsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [board]);
 
   async function loadMore() {
     if (loadingMore) return;
@@ -105,9 +136,92 @@ export default function LeaderboardPage() {
           battle rankings
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Every idea starts at 1000 Elo. Win battles to climb. Lose and fall.
+          Rank ideas by battle results, or compete as a predictor by matching the crowd signal.
         </p>
       </div>
+
+      <div className="mb-6 grid grid-cols-2 gap-px border border-border/30 bg-border/30">
+        {([
+          { key: "ideas" as Board, label: "Idea rankings", icon: Trophy },
+          { key: "predictors" as Board, label: "Predictors", icon: Target },
+        ]).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setBoard(key)}
+            className={`flex items-center justify-center gap-2 px-3 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
+              board === key
+                ? "bg-fire text-fire-foreground"
+                : "bg-background text-muted-foreground hover:bg-panel hover:text-foreground"
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-6 border border-border/30 bg-card/15 px-4 py-3 text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">Predictor Elo</span> rewards voters who consistently match the pre-vote crowd signal. Weak matchups are provisional until there are enough prior votes or rating separation.
+      </div>
+
+      {board === "predictors" ? (
+        predictorsLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-fire" />
+          </div>
+        ) : predictors.length === 0 ? (
+          <div className="py-20 text-center">
+            <Target className="mx-auto h-10 w-10 text-muted-foreground/20" />
+            <p className="mt-4 text-muted-foreground">
+              No predictor scores yet.{" "}
+              <Link href="/battle" className="text-fire hover:underline">
+                Vote on a battle
+              </Link>{" "}
+              to enter the board.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {predictors.map((predictor, i) => {
+              const tier = formatPredictionTier(predictor.prediction_elo);
+              return (
+                <div key={predictor.id} className="flex items-center gap-4 border border-border/20 bg-card/10 px-4 py-3">
+                  <div className="w-8 shrink-0 text-center font-mono text-sm font-bold text-muted-foreground">
+                    #{i + 1}
+                  </div>
+                  <Avatar src={predictor.image} name={predictor.name} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-semibold">{predictor.name || "Anonymous"}</p>
+                      <span className="rounded-full border border-fire/25 bg-fire/5 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fire">
+                        {tier}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {predictor.prediction_wins} right / {predictor.prediction_losses} wrong · {predictor.accuracy}% accuracy
+                    </p>
+                  </div>
+                  <div className="grid shrink-0 grid-cols-3 gap-4 text-right text-xs">
+                    <div>
+                      <p className="font-mono text-lg font-black text-fire">{predictor.prediction_elo}</p>
+                      <p className="uppercase tracking-wider text-muted-foreground">Elo</p>
+                    </div>
+                    <div className="hidden sm:block">
+                      <p className="font-mono text-lg font-black">{predictor.guesses}</p>
+                      <p className="uppercase tracking-wider text-muted-foreground">Guesses</p>
+                    </div>
+                    <div className="hidden sm:block">
+                      <p className="font-mono text-lg font-black text-emerald-400">{predictor.best_prediction_streak}</p>
+                      <p className="uppercase tracking-wider text-muted-foreground">Best streak</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : (
+        <>
 
       {/* Tabs */}
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -205,7 +319,7 @@ export default function LeaderboardPage() {
                 const medals = ["", "1st", "2nd", "3rd"];
                 const medalColors = ["", "text-amber-400 border-amber-400/30 bg-amber-400/5", "text-zinc-300 border-zinc-400/30 bg-zinc-400/5", "text-orange-400 border-orange-400/30 bg-orange-400/5"];
                 return (
-                  <Link key={idea.id} href={`/idea/${idea.id}`}>
+                  <Link key={idea.id} href={ideaPath(idea)}>
                     <div className={`perspective-card group cursor-pointer`}>
                       <div className={`transition-all duration-300 hover:shadow-lg dark:hover:shadow-fire/5 border p-5 ${medalColors[i + 1] || "border-border/40"}`}>
                         <div className="flex items-center justify-between mb-3">
@@ -252,6 +366,8 @@ export default function LeaderboardPage() {
               </button>
             </div>
           )}
+        </>
+      )}
         </>
       )}
     </div>

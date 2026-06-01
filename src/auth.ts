@@ -47,7 +47,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user?.email) {
         try {
           const result = await sql`
-            SELECT id, name, image, is_admin, plan, subscription_status, launch_pass_purchased_at
+            SELECT
+              id,
+              name,
+              image,
+              is_admin,
+              plan,
+              subscription_status,
+              launch_pass_purchased_at,
+              prediction_elo,
+              prediction_wins,
+              prediction_losses,
+              prediction_streak,
+              best_prediction_streak
             FROM users
             WHERE email = ${session.user.email}
           `;
@@ -57,6 +69,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             (session.user as { name?: string }).name = row.name;
             (session.user as { image?: string }).image = row.image;
             (session.user as { isAdmin?: boolean }).isAdmin = row.is_admin;
+            session.user.predictionElo = Number(row.prediction_elo ?? 1000);
+            session.user.predictionWins = Number(row.prediction_wins ?? 0);
+            session.user.predictionLosses = Number(row.prediction_losses ?? 0);
+            session.user.predictionStreak = Number(row.prediction_streak ?? 0);
+            session.user.bestPredictionStreak = Number(row.best_prediction_streak ?? 0);
             (session.user as { plan?: "free" | "launch" | "pro" }).plan =
               row.plan === "pro" && (row.subscription_status === "active" || row.subscription_status === "trialing")
                 ? "pro"

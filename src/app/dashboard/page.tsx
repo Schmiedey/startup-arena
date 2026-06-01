@@ -5,11 +5,13 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Idea, CATEGORY_COLORS, STAGE_COLORS } from "@/lib/types";
 import { getWinRate, getSurvivalRating, formatElo } from "@/lib/elo";
+import { formatPredictionTier, getPredictionAccuracy } from "@/lib/prediction";
 import Link from "next/link";
-import { Plus, ExternalLink, Loader2, Camera, Check, CreditCard, CheckCircle2 } from "lucide-react";
+import { Plus, ExternalLink, Loader2, Camera, Check, CreditCard, CheckCircle2, Target } from "lucide-react";
 import { LikelyrLogo } from "@/components/likelyr-logo";
 import { Avatar } from "@/components/avatar";
 import { trackClientEvent } from "@/lib/analytics-client";
+import { ideaPath } from "@/lib/seo";
 
 const planCopy = {
   free: {
@@ -106,6 +108,11 @@ export default function DashboardPage() {
   const overallWinRate = totalWins + totalLosses > 0 ? Math.round((totalWins / (totalWins + totalLosses)) * 100) : 0;
   const currentPlan = session.user.plan ?? "free";
   const plan = planCopy[currentPlan];
+  const predictionWins = session.user.predictionWins ?? 0;
+  const predictionLosses = session.user.predictionLosses ?? 0;
+  const predictionElo = session.user.predictionElo ?? 1000;
+  const predictionAccuracy = getPredictionAccuracy(predictionWins, predictionLosses);
+  const predictionTier = formatPredictionTier(predictionElo);
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -243,6 +250,53 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      <div className="mb-8 border border-border/30 bg-card/20 p-4">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-fire/30 bg-fire/10 text-fire">
+              <Target className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">predictor score</p>
+              <p className="text-sm font-semibold">
+                {predictionTier}
+                <span className="mx-2 text-muted-foreground">/</span>
+                <span className="text-muted-foreground">match the crowd signal to climb</span>
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/leaderboard"
+            className="inline-flex items-center justify-center gap-1.5 border border-border/50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:border-fire/40 hover:text-fire"
+          >
+            rankings
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-px border border-border/30 sm:grid-cols-4">
+          <div className="bg-background/50 p-4">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">predictor elo</p>
+            <p className="mt-1 text-2xl font-black text-fire">{predictionElo}</p>
+          </div>
+          <div className="bg-background/50 p-4">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">accuracy</p>
+            <p className="mt-1 text-2xl font-black">{predictionAccuracy}%</p>
+          </div>
+          <div className="bg-background/50 p-4">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">guesses</p>
+            <p className="mt-1 text-2xl font-black">
+              <span className="text-emerald-400">{predictionWins}</span>
+              <span className="text-muted-foreground"> / </span>
+              <span className="text-red-400">{predictionLosses}</span>
+            </p>
+          </div>
+          <div className="bg-background/50 p-4">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">streak</p>
+            <p className="mt-1 text-2xl font-black">{session.user.predictionStreak ?? 0}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Stats */}
       <div className="mb-2 text-lg font-bold">your ideas</div>
 
@@ -301,7 +355,7 @@ export default function DashboardPage() {
             const survival = getSurvivalRating(idea.elo_score);
             const tier = formatElo(idea.elo_score);
             return (
-              <Link key={idea.id} href={`/idea/${idea.id}`} className="block">
+              <Link key={idea.id} href={ideaPath(idea)} className="block">
                 <div className="group flex items-center gap-4 border border-border/20 bg-card/10 px-4 py-3 transition-colors hover:bg-panel/20 hover:border-fire/20">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">

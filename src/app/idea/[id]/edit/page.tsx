@@ -11,12 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { extractEntityId, ideaPath } from "@/lib/seo";
 
 export default function EditIdeaPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session, status } = useSession();
-  const id = params.id as string;
+  const id = extractEntityId(params.id as string);
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -88,7 +89,7 @@ export default function EditIdeaPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to update");
       }
-      router.push(`/idea/${id}`);
+      router.push(ideaPath({ id, name }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update");
     } finally {
@@ -138,7 +139,7 @@ export default function EditIdeaPage() {
 
   return (
     <div className="mx-auto max-w-lg px-6 py-10">
-      <Link href={`/idea/${id}`} className="mb-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+      <Link href={ideaPath({ id, name })} className="mb-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-3 w-3" />
         back to idea
       </Link>

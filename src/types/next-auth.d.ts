@@ -9,6 +9,11 @@ declare module "next-auth" {
       image?: string | null;
       isAdmin?: boolean;
       plan?: "free" | "launch" | "pro";
+      predictionElo?: number;
+      predictionWins?: number;
+      predictionLosses?: number;
+      predictionStreak?: number;
+      bestPredictionStreak?: number;
     };
   }
 }

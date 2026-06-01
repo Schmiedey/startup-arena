@@ -2,6 +2,7 @@ import { Idea, CATEGORY_COLORS, STAGE_COLORS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { getWinRate, getSurvivalRating, formatElo } from "@/lib/elo";
 import Link from "next/link";
+import { ideaPath } from "@/lib/seo";
 
 interface IdeaCardProps {
   idea: Idea;
@@ -14,7 +15,7 @@ export function IdeaCard({ idea, rank }: IdeaCardProps) {
   const eloTier = formatElo(idea.elo_score);
 
   return (
-    <Link href={`/idea/${idea.id}`}>
+    <Link href={ideaPath(idea)}>
       <div className="group relative flex items-center gap-4 rounded-xl border border-border/60 bg-card/50 p-4 transition-all hover:border-fire/40 hover:bg-panel/30 hover:shadow-[0_0_20px_rgba(220,60,30,0.08)]">
         {rank <= 3 && (
           <div className="absolute -left-px -top-px h-8 w-8 rounded-tl-xl rounded-br-lg bg-fire/10 flex items-center justify-center border-b border-r border-fire/20">

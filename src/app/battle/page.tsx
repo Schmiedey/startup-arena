@@ -12,6 +12,7 @@ import { RefreshCw, Loader2, MessageSquare, Share2 } from "lucide-react";
 import { LikelyrLogo } from "@/components/likelyr-logo";
 import { BattleResultCard } from "@/components/battle-result-card";
 import { trackClientEvent } from "@/lib/analytics-client";
+import { battlePath } from "@/lib/seo";
 
 interface BattleData {
   idea_a: Idea;
@@ -22,6 +23,14 @@ interface BattleData {
 interface VoteResult {
   winnerDelta: number;
   loserDelta: number;
+  prediction?: {
+    correct: boolean | null;
+    ranked: boolean;
+    eloBefore: number;
+    eloAfter: number;
+    eloDelta: number;
+    streak: number;
+  };
 }
 
 function fetchComments(ideaId: string): Promise<Comment[]> {
@@ -160,6 +169,7 @@ export default function BattlePage() {
       setResult({
         winnerDelta: Number(data.newWinnerRating) - winnerBefore.elo_score,
         loserDelta: Number(data.newLoserRating) - loserBefore.elo_score,
+        prediction: data.prediction,
       });
       trackClientEvent("vote_completed", {
         battle_id: battle.battle_id,
@@ -177,7 +187,7 @@ export default function BattlePage() {
     const loserIdea = loser === battle.idea_a.id ? battle.idea_a : battle.idea_b;
     if (!loserIdea) return;
 
-    const url = `${window.location.origin}/battle/${battle.battle_id}`;
+    const url = `${window.location.origin}${battlePath({ id: battle.battle_id, idea_a: battle.idea_a, idea_b: battle.idea_b })}`;
     const text = `${winnerIdea.name} beat ${loserIdea.name} on Likelyr. Think the crowd got it wrong?`;
 
     try {
@@ -282,6 +292,12 @@ export default function BattlePage() {
           {challenge ? "Is this idea likelier to succeed?" : "Which idea is more likely to"}{" "}
           <span className="text-gradient-fire">make money</span>?
         </h1>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+          Pick the idea you think matches the crowd signal. Ranked predictor Elo only moves when the matchup has enough prior signal.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          Ratings stay hidden until after you vote.
+        </p>
       </div>
 
       {!challenge && (
@@ -362,6 +378,7 @@ export default function BattlePage() {
           battleId={battle.battle_id}
           winnerDelta={result.winnerDelta}
           loserDelta={result.loserDelta}
+          prediction={result.prediction}
           shared={shared}
           onShare={shareBattleResult}
           onNext={loadBattle}
@@ -392,7 +409,7 @@ export default function BattlePage() {
             </Button>
             {battle?.battle_id && (
               <a
-                href={`/battle/${battle.battle_id}`}
+                href={battlePath({ id: battle.battle_id, idea_a: battle.idea_a, idea_b: battle.idea_b })}
                 onClick={async (e) => {
                   e.preventDefault();
                   await shareBattleResult();

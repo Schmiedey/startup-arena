@@ -72,24 +72,31 @@ export function BattleCard({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 rounded-lg bg-background/80 p-3">
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Record</p>
-            <p className="text-sm font-semibold">
-              <span className="text-emerald-400">{idea.wins}W</span>
-              <span className="text-muted-foreground"> / </span>
-              <span className="text-red-400">{idea.losses}L</span>
-            </p>
+        {voted ? (
+          <div className="grid grid-cols-3 gap-2 rounded-lg bg-background/80 p-3">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Record</p>
+              <p className="text-sm font-semibold">
+                <span className="text-emerald-400">{idea.wins}W</span>
+                <span className="text-muted-foreground"> / </span>
+                <span className="text-red-400">{idea.losses}L</span>
+              </p>
+            </div>
+            <div className="text-center border-x border-border/50">
+              <p className="text-xs text-muted-foreground">Elo</p>
+              <p className="text-sm font-bold text-fire">{idea.elo_score}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Survival</p>
+              <p className="text-sm font-bold text-emerald-400">{survivalRating}%</p>
+            </div>
           </div>
-          <div className="text-center border-x border-border/50">
-            <p className="text-xs text-muted-foreground">Elo</p>
-            <p className="text-sm font-bold text-fire">{idea.elo_score}</p>
+        ) : (
+          <div className="rounded-lg border border-border/30 bg-background/60 p-3 text-center">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ratings hidden</p>
+            <p className="mt-1 text-xs text-muted-foreground">Pick first. See score after.</p>
           </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Survival</p>
-            <p className="text-sm font-bold text-emerald-400">{survivalRating}%</p>
-          </div>
-        </div>
+        )}
 
         {!voted && (
           <Button

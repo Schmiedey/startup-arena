@@ -36,8 +36,8 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
-  const [systemTheme, setSystemTheme] = useState<"dark" | "light">(getSystemTheme);
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [systemTheme, setSystemTheme] = useState<"dark" | "light">("dark");
   const resolvedTheme = theme === "system" ? systemTheme : theme;
 
   useEffect(() => {
@@ -46,8 +46,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setSystemTheme(mediaQuery.matches ? "dark" : "light");
     }
 
+    const frame = requestAnimationFrame(() => {
+      setThemeState(getStoredTheme());
+      setSystemTheme(getSystemTheme());
+    });
     mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
+    return () => {
+      cancelAnimationFrame(frame);
+      mediaQuery.removeEventListener("change", handleChange);
+    };
   }, []);
 
   useEffect(() => {

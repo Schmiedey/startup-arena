@@ -18,6 +18,7 @@ import { Check, Loader2, Flame, AlertCircle } from "lucide-react";
 import { LikelyrLogo } from "@/components/likelyr-logo";
 import Link from "next/link";
 import { trackClientEvent } from "@/lib/analytics-client";
+import { ideaPath } from "@/lib/seo";
 
 export default function SubmitPage() {
   const [name, setName] = useState("");
@@ -95,7 +96,7 @@ export default function SubmitPage() {
           </Link>
           {ideaId && (
             <Link
-              href={`/idea/${ideaId}`}
+              href={ideaPath({ id: ideaId, name })}
               className="inline-flex items-center gap-2 rounded-none border border-border/60 px-6 py-3 font-semibold hover:bg-panel"
             >
               View Your Idea

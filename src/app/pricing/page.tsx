@@ -9,6 +9,10 @@ import { trackClientEvent } from "@/lib/analytics-client";
 
 type CheckoutPlan = "launch-pass" | "founder-pro-monthly" | "founder-pro-yearly";
 
+async function readJsonResponse(res: Response): Promise<Record<string, unknown>> {
+  return res.json().catch(() => ({}));
+}
+
 const plans = [
   {
     id: "free",
@@ -27,7 +31,7 @@ const plans = [
     price: "$19",
     cadence: "one-time",
     description: "Best for testing several ideas and sharing challenge links.",
-    features: ["Submit up to 5 ideas", "Challenge links", "Share images", "Feedback digest export-ready data"],
+    features: ["Submit up to 5 ideas", "Challenge links for each idea", "Share-ready idea cards", "Public comments and vote reasons"],
     cta: "Buy Launch Pass",
     checkoutPlan: "launch-pass" as CheckoutPlan,
     icon: Zap,
@@ -39,7 +43,7 @@ const plans = [
     price: "$12",
     cadence: "/mo",
     description: "For repeat builders who want unlimited idea testing.",
-    features: ["Unlimited ideas", "Category battle visibility", "Advanced founder tools", "Ongoing challenge campaigns"],
+    features: ["Unlimited ideas", "Category battle testing", "Founder profile visibility", "Ongoing challenge links"],
     cta: "Start Founder Pro",
     checkoutPlan: "founder-pro-monthly" as CheckoutPlan,
     secondaryCheckoutPlan: "founder-pro-yearly" as CheckoutPlan,
@@ -63,15 +67,15 @@ export default function PricingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       });
-      const data = await res.json();
+      const data = await readJsonResponse(res);
 
       if (res.status === 401) {
         trackClientEvent("checkout_auth_required", { plan });
         router.push("/signin");
         return;
       }
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Could not start checkout");
+      if (!res.ok || typeof data.url !== "string") {
+        throw new Error(typeof data.error === "string" ? data.error : "Could not start checkout");
       }
 
       trackClientEvent("checkout_redirected", { plan });
@@ -88,12 +92,14 @@ export default function PricingPage() {
     trackClientEvent("billing_portal_clicked");
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
-      const data = await res.json();
+      const data = await readJsonResponse(res);
       if (res.status === 401) {
         router.push("/signin");
         return;
       }
-      if (!res.ok || !data.url) throw new Error(data.error || "Billing portal is not available yet");
+      if (!res.ok || typeof data.url !== "string") {
+        throw new Error(typeof data.error === "string" ? data.error : "Billing portal is not available yet");
+      }
       window.location.assign(data.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open billing portal");

@@ -7,6 +7,13 @@ import { withTransaction } from "@/lib/db";
 import { publicTextError } from "@/lib/moderation";
 import { trackEvent } from "@/lib/analytics";
 import { rateLimit, rateLimitIdentity, rateLimitResponse } from "@/lib/rate-limit";
+import {
+  DEFAULT_PREDICTION_ELO,
+  calculatePredictionElo,
+  getPredictionDifficulty,
+  getPredictionTarget,
+  isRankedPredictionSignal,
+} from "@/lib/prediction";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -40,7 +47,7 @@ export async function POST(request: Request) {
   try {
     const result = await withTransaction(async (client) => {
       const battleResult = await client.sql`
-        SELECT idea_a_id, idea_b_id FROM battles WHERE id = ${battle_id} FOR UPDATE
+        SELECT idea_a_id, idea_b_id, idea_a_votes, idea_b_votes FROM battles WHERE id = ${battle_id} FOR UPDATE
       `;
       const battle = battleResult.rows[0];
       if (!battle) {
@@ -53,9 +60,16 @@ export async function POST(request: Request) {
 
       const loserId = winner_id === battle.idea_a_id ? battle.idea_b_id : battle.idea_a_id;
 
-      const ideaA = await client.sql`SELECT user_id FROM ideas WHERE id = ${battle.idea_a_id}`;
-      const ideaB = await client.sql`SELECT user_id FROM ideas WHERE id = ${battle.idea_b_id}`;
-      if (ideaA.rows[0]?.user_id === user.id || ideaB.rows[0]?.user_id === user.id) {
+      const ideaAResult = await client.sql`SELECT * FROM ideas WHERE id = ${battle.idea_a_id} FOR UPDATE`;
+      const ideaBResult = await client.sql`SELECT * FROM ideas WHERE id = ${battle.idea_b_id} FOR UPDATE`;
+      const ideaA = ideaAResult.rows[0];
+      const ideaB = ideaBResult.rows[0];
+
+      if (!ideaA || !ideaB) {
+        return { error: "Idea not found", status: 404 as const };
+      }
+
+      if (ideaA.user_id === user.id || ideaB.user_id === user.id) {
         return { error: "You cannot vote on your own idea", status: 403 as const };
       }
 
@@ -64,19 +78,74 @@ export async function POST(request: Request) {
         const spamError = publicTextError(trimmedReason, { maxUrls: 1 });
         if (spamError) return { error: spamError, status: 400 as const };
       }
+
+      const crowdSignalTargetId = getPredictionTarget({
+        ideaAId: battle.idea_a_id,
+        ideaBId: battle.idea_b_id,
+        ideaAVotes: Number(battle.idea_a_votes ?? 0),
+        ideaBVotes: Number(battle.idea_b_votes ?? 0),
+        ideaAElo: Number(ideaA.elo_score),
+        ideaBElo: Number(ideaB.elo_score),
+      });
+      const predictionDifficulty = getPredictionDifficulty({
+        ideaAVotes: Number(battle.idea_a_votes ?? 0),
+        ideaBVotes: Number(battle.idea_b_votes ?? 0),
+        ideaAElo: Number(ideaA.elo_score),
+        ideaBElo: Number(ideaB.elo_score),
+      });
+      const predictionRanked = isRankedPredictionSignal({
+        ideaAVotes: Number(battle.idea_a_votes ?? 0),
+        ideaBVotes: Number(battle.idea_b_votes ?? 0),
+        ideaAElo: Number(ideaA.elo_score),
+        ideaBElo: Number(ideaB.elo_score),
+      });
+      const predictionTargetId = crowdSignalTargetId ?? winner_id;
+      const predictionCorrect = crowdSignalTargetId === null ? null : winner_id === crowdSignalTargetId;
+
+      const voterResult = await client.sql`
+        SELECT prediction_elo, prediction_wins, prediction_losses, prediction_streak, best_prediction_streak
+        FROM users WHERE id = ${user.id} FOR UPDATE
+      `;
+      const voter = voterResult.rows[0];
+      const voterEloBefore = Number(voter?.prediction_elo ?? DEFAULT_PREDICTION_ELO);
+      const voterEloAfter = predictionRanked && predictionCorrect !== null
+        ? calculatePredictionElo(voterEloBefore, predictionDifficulty, predictionCorrect)
+        : voterEloBefore;
+      const currentPredictionStreak = Number(voter?.prediction_streak ?? 0);
+      const predictionStreak = predictionRanked && predictionCorrect !== null
+        ? predictionCorrect
+          ? currentPredictionStreak + 1
+          : 0
+        : currentPredictionStreak;
+      const bestPredictionStreak = Math.max(Number(voter?.best_prediction_streak ?? 0), predictionStreak);
+
       await client.sql`
-        INSERT INTO votes (battle_id, user_id, winner_id, reason)
-        VALUES (${battle_id}, ${user.id}, ${winner_id}, ${trimmedReason})
+        INSERT INTO votes (
+          battle_id,
+          user_id,
+          winner_id,
+          prediction_target_id,
+          prediction_correct,
+          prediction_ranked,
+          voter_elo_before,
+          voter_elo_after,
+          reason
+        )
+        VALUES (
+          ${battle_id},
+          ${user.id},
+          ${winner_id},
+          ${predictionTargetId},
+          ${predictionCorrect},
+          ${predictionRanked},
+          ${voterEloBefore},
+          ${voterEloAfter},
+          ${trimmedReason}
+        )
       `;
 
-      const winnerResult = await client.sql`SELECT * FROM ideas WHERE id = ${winner_id} FOR UPDATE`;
-      const loserResult = await client.sql`SELECT * FROM ideas WHERE id = ${loserId} FOR UPDATE`;
-      const winner = winnerResult.rows[0];
-      const loser = loserResult.rows[0];
-
-      if (!winner || !loser) {
-        return { error: "Idea not found", status: 404 as const };
-      }
+      const winner = winner_id === battle.idea_a_id ? ideaA : ideaB;
+      const loser = loserId === battle.idea_a_id ? ideaA : ideaB;
 
       const { newWinnerRating, newLoserRating } = calculateElo(winner.elo_score, loser.elo_score);
       const isAWinner = winner_id === battle.idea_a_id;
@@ -89,12 +158,32 @@ export async function POST(request: Request) {
           idea_b_votes = idea_b_votes + ${isAWinner ? 0 : 1}
         WHERE id = ${battle_id}
       `;
+      await client.sql`
+        UPDATE users SET
+          prediction_elo = ${voterEloAfter},
+          prediction_wins = prediction_wins + ${predictionRanked && predictionCorrect === true ? 1 : 0},
+          prediction_losses = prediction_losses + ${predictionRanked && predictionCorrect === false ? 1 : 0},
+          prediction_streak = ${predictionStreak},
+          best_prediction_streak = ${bestPredictionStreak}
+        WHERE id = ${user.id}
+      `;
 
       return {
         winner: { ...winner, elo_score: newWinnerRating, wins: winner.wins + 1 },
         loser: { ...loser, elo_score: newLoserRating, losses: loser.losses + 1 },
         newWinnerRating,
         newLoserRating,
+        prediction: {
+          correct: predictionCorrect,
+          targetId: predictionTargetId,
+          difficulty: predictionDifficulty,
+          ranked: predictionRanked,
+          eloBefore: voterEloBefore,
+          eloAfter: voterEloAfter,
+          eloDelta: voterEloAfter - voterEloBefore,
+          streak: predictionStreak,
+          bestStreak: bestPredictionStreak,
+        },
       };
     });
 
@@ -106,7 +195,13 @@ export async function POST(request: Request) {
       name: "vote_created",
       userId: user.id,
       path: new URL(request.url).pathname,
-      metadata: { battle_id, winner_id },
+      metadata: {
+        battle_id,
+        winner_id,
+        prediction_correct: result.prediction.correct,
+        prediction_ranked: result.prediction.ranked,
+        prediction_delta: result.prediction.eloDelta,
+      },
     });
 
     return NextResponse.json({
@@ -114,6 +209,7 @@ export async function POST(request: Request) {
       loser: result.loser,
       newWinnerRating: result.newWinnerRating,
       newLoserRating: result.newLoserRating,
+      prediction: result.prediction,
     });
   } catch (error) {
     // Check for unique constraint violation (duplicate vote)

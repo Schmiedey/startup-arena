@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { createMetadata, noIndexRobots } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
-  title: "Dashboard",
-  description: "Manage your ideas and profile on Likelyr.",
-  path: "/dashboard",
+  title: "Admin",
+  description: "Likelyr admin tools.",
+  path: "/admin",
   robots: noIndexRobots(),
 });
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

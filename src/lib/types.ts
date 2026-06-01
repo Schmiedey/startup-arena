@@ -68,3 +68,16 @@ export interface Comment {
   user_image?: string | null;
   flag_count?: number;
 }
+
+export interface Predictor {
+  id: string;
+  name: string | null;
+  image: string | null;
+  prediction_elo: number;
+  prediction_wins: number;
+  prediction_losses: number;
+  prediction_streak: number;
+  best_prediction_streak: number;
+  guesses: number;
+  accuracy: number;
+}

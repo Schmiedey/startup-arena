@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Crown, Flame, ArrowLeft } from "lucide-react";
 import { Avatar } from "@/components/avatar";
+import { founderPath } from "@/lib/seo";
 
 interface Founder {
   id: string;
@@ -117,7 +118,7 @@ export default function FoundersPage() {
               : 0;
 
             return (
-              <Link key={f.id} href={`/founder/${f.id}`} className="block">
+              <Link key={f.id} href={founderPath(f)} className="block">
                 <div className="group flex items-center gap-4 border border-border/20 bg-card/10 px-4 py-3 transition-colors hover:bg-panel/20 hover:border-fire/20">
                   {/* Rank */}
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none font-black font-[family-name:var(--font-chakra)] tabular-nums">

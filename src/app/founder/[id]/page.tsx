@@ -4,9 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Crown, TrendingUp, Zap, Trophy } from "lucide-react";
 import { Avatar } from "@/components/avatar";
+import { JsonLd } from "@/components/json-ld";
+import { absoluteUrl, extractEntityId, founderPath, ideaPath } from "@/lib/seo";
 
 export default async function FounderPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = extractEntityId(rawId);
 
   let user, ideas, stats, karmaData;
 
@@ -49,6 +52,8 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
   const votesCast = Number(karmaData.votes_cast);
   const ideasCount = Number(stats.total_ideas);
   const karma = totalWins * 5 + votesCast * 1 + ideasCount * 10;
+  const displayName = user.name ?? "Anonymous founder";
+  const profilePath = founderPath({ id, name: user.name });
 
   const KARMA_TIERS = [
     { min: 200, label: "Veteran", color: "text-emerald-400", bg: "bg-emerald-400/10" },
@@ -59,9 +64,37 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
   ];
 
   const tier = KARMA_TIERS.find((t) => karma >= t.min) ?? KARMA_TIERS[KARMA_TIERS.length - 1];
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": `${absoluteUrl(profilePath)}#profile`,
+    name: `${displayName} founder profile`,
+    url: absoluteUrl(profilePath),
+    dateCreated: user.created_at,
+    mainEntity: {
+      "@type": "Person",
+      name: displayName,
+      image: user.image ?? undefined,
+      url: absoluteUrl(profilePath),
+      knowsAbout: ["startup ideas", "startup validation", "business ideas"],
+      interactionStatistic: [
+        {
+          "@type": "InteractionCounter",
+          interactionType: { "@type": "CreateAction" },
+          userInteractionCount: ideasCount,
+        },
+        {
+          "@type": "InteractionCounter",
+          interactionType: { "@type": "VoteAction" },
+          userInteractionCount: votesCast,
+        },
+      ],
+    },
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
+      <JsonLd data={jsonLd} />
       <Link
         href="/founders"
         className="mb-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
@@ -73,7 +106,7 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
         <Avatar src={user.image} name={user.name} size={64} className="border-2 border-border/50" />
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black">{user.name ?? "Anonymous"}</h1>
+            <h1 className="text-2xl font-black">{displayName}</h1>
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tier.color} ${tier.bg}`}>
               {tier.label}
             </span>
@@ -152,7 +185,11 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
             const iWinRate = getWinRate(Number(idea.wins), Number(idea.losses));
             const iSurvival = getSurvivalRating(Number(idea.elo_score));
             return (
-              <Link key={String(idea.id)} href={`/idea/${idea.id}`} className="block">
+              <Link
+                key={String(idea.id)}
+                href={ideaPath({ id: String(idea.id), name: String(idea.name) })}
+                className="block"
+              >
                 <div className="flex items-center gap-4 border border-border/20 bg-card/10 px-4 py-3 transition-colors hover:bg-panel/20 hover:border-fire/20">
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{String(idea.name)}</p>
