@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Chakra_Petch } from "next/font/google";
 import { Suspense } from "react";
@@ -99,6 +100,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${chakraPetch.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("likelyr-theme");if(t==="light"){document.documentElement.classList.remove("dark")}else if(t==="dark"){document.documentElement.classList.add("dark")}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <SessionProvider>
@@ -108,10 +116,10 @@ export default function RootLayout({
             <footer className="border-t border-border/30 py-8 text-center">
               <div className="mx-auto max-w-5xl px-6">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground/50">Likelyr - startup idea validation by real votes</p>
-                <nav className="mt-3 flex items-center justify-center gap-4 text-xs text-muted-foreground/60">
-                  <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
+                <nav className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs text-muted-foreground/60">
+                  <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
                   <span>·</span>
-                  <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
+                  <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
                   <span>·</span>
                   <a href="https://x.com/likelyr" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">X / Twitter</a>
                 </nav>

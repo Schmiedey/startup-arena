@@ -446,7 +446,7 @@ export default function BattlePage() {
                 onClick={() => setShowComments(false)}
                 variant="outline"
                 size="sm"
-                className="gap-1.5 text-muted-foreground"
+className="gap-1.5 text-muted-foreground hover:text-foreground hover:bg-panel border border-border/40"
               >
                 Hide Comments
               </Button>

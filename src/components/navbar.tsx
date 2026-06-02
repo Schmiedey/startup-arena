@@ -109,7 +109,7 @@ export function Navbar() {
                   <Avatar src={session.user.image} name={session.user.name} size={28} />
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-1 w-48 rounded-none border border-border/40 bg-card py-1 shadow-lg">
+                  <div className="absolute right-0 mt-1 w-48 rounded-none border border-border/40 bg-card py-1 shadow-lg animate-slide-up">
                     <Link
                       href="/dashboard"
                       onClick={() => setDropdownOpen(false)}
@@ -160,14 +160,14 @@ export function Navbar() {
       </header>
 
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-40 md:hidden animate-fade-in" role="dialog" aria-modal="true">
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
           />
           <nav
             ref={mobileMenuRef}
-            className="fixed top-0 right-0 bottom-0 w-72 bg-background border-l border-border/30 shadow-2xl overflow-y-auto"
+            className="fixed top-0 right-0 bottom-0 w-72 bg-background border-l border-border/30 shadow-2xl overflow-y-auto animate-slide-in-right"
           >
             <div className="flex items-center justify-between px-6 h-12 border-b border-border/30">
               <span className="text-sm font-black tracking-tight uppercase font-[family-name:var(--font-chakra)]">

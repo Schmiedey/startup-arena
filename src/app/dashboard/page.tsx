@@ -164,7 +164,7 @@ export default function DashboardPage() {
       <LikelyrBackground className="opacity-[0.06]" />
       <div className="relative z-10">
       {searchParams.get("checkout") === "success" && (
-        <div className="mb-6 flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+        <div className="mb-6 flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300 animate-slide-up">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>Your payment went through. If the plan label has not updated yet, refresh in a few seconds while Stripe finishes the webhook.</span>
         </div>

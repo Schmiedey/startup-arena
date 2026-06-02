@@ -16,7 +16,7 @@ export function IdeaCard({ idea, rank }: IdeaCardProps) {
 
   return (
     <Link href={ideaPath(idea)}>
-      <div className="group relative flex items-center gap-4 rounded-xl border border-border/60 bg-card/50 p-4 transition-all hover:border-fire/40 hover:bg-panel/30 hover:shadow-[0_0_20px_rgba(220,60,30,0.08)]">
+      <div className="group relative flex items-center gap-4 rounded-xl border border-border/60 bg-card/50 p-4 transition-all focus-within:border-fire/40 focus-within:bg-panel/30 focus-within:shadow-[0_0_20px_rgba(220,60,30,0.08)] hover:border-fire/40 hover:bg-panel/30 hover:shadow-[0_0_20px_rgba(220,60,30,0.08)]">
         {rank <= 3 && (
           <div className="absolute -left-px -top-px h-8 w-8 rounded-tl-xl rounded-br-lg bg-fire/10 flex items-center justify-center border-b border-r border-fire/20">
             <span className="text-xs font-black text-fire">#{rank}</span>
@@ -37,6 +37,9 @@ export function IdeaCard({ idea, rank }: IdeaCardProps) {
             <Badge variant="secondary" className={`${CATEGORY_COLORS[idea.category] ?? ""} text-xs px-1.5 py-0`}>
               {idea.category}
             </Badge>
+            <span className="sm:hidden text-xs text-muted-foreground">
+              <span className="font-bold text-fire">{idea.elo_score}</span> Elo
+            </span>
             {typeof idea.controversy_score === "number" && idea.controversy_score > 0 && (
               <Badge variant="outline" className="border-fire/30 bg-fire/5 px-1.5 py-0 text-xs text-fire">
                 {idea.controversy_score} heat

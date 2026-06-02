@@ -165,7 +165,7 @@ export default function SubmitPage() {
                 maxLength={300}
                 className="min-h-[72px] resize-none bg-background/30 border-border/50"
               />
-              <p className="text-xs text-right text-muted-foreground/60">{pitch.length}/300</p>
+              <p className={`text-xs text-right ${pitch.length > 270 ? "text-fire" : "text-muted-foreground/60"}`}>{pitch.length}/300</p>
             </div>
 
             <div className="space-y-1.5">
@@ -192,7 +192,7 @@ export default function SubmitPage() {
                 maxLength={500}
                 className="min-h-[72px] resize-none bg-background/30 border-border/50"
               />
-              <p className="text-xs text-right text-muted-foreground/60">{problem.length}/500</p>
+              <p className={`text-xs text-right ${problem.length > 450 ? "text-fire" : "text-muted-foreground/60"}`}>{problem.length}/500</p>
             </div>
 
             <div className="space-y-1.5">

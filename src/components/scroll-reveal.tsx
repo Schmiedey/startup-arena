@@ -21,6 +21,15 @@ export function ScrollReveal({
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const [prefersReduced, setPrefersReduced] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReduced(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -39,6 +48,10 @@ export function ScrollReveal({
     observer.observe(el);
     return () => observer.disconnect();
   }, [threshold]);
+
+  if (prefersReduced) {
+    return <div ref={ref} className={className}>{children}</div>;
+  }
 
   const animClass = visible ? `animate-${animation}` : "opacity-0";
 

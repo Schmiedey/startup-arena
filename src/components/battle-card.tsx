@@ -75,7 +75,7 @@ export function BattleCard({
         </div>
 
         {voted ? (
-          <div className="grid grid-cols-3 gap-2 rounded-lg bg-background/80 p-3">
+          <div className="grid grid-cols-3 gap-2 rounded-lg bg-background/80 p-3 animate-slide-up">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Record</p>
               <p className="text-sm font-semibold">
@@ -102,7 +102,7 @@ export function BattleCard({
 
         {!voted && (
           <Button
-            onClick={() => { setPressing(true); onVote(idea.id); }}
+            onClick={() => { setPressing(true); setTimeout(() => setPressing(false), 350); onVote(idea.id); }}
             className={`w-full btn-fire bg-fire text-fire-foreground hover:bg-fire/90 font-semibold tracking-wide uppercase text-sm ${pressing ? "btn-fire-press" : ""}`}
             size="lg"
           >
