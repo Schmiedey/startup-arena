@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Idea, STAGE_COLORS, CATEGORY_COLORS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export function BattleCard({
   isLoser,
 }: BattleCardProps) {
   const survivalRating = getSurvivalRating(idea.elo_score);
+  const [pressing, setPressing] = useState(false);
 
   return (
     <Card
@@ -100,8 +102,8 @@ export function BattleCard({
 
         {!voted && (
           <Button
-            onClick={() => onVote(idea.id)}
-            className="w-full bg-fire text-fire-foreground hover:bg-fire/90 font-semibold tracking-wide uppercase text-sm"
+            onClick={() => { setPressing(true); onVote(idea.id); }}
+            className={`w-full btn-fire bg-fire text-fire-foreground hover:bg-fire/90 font-semibold tracking-wide uppercase text-sm ${pressing ? "btn-fire-press" : ""}`}
             size="lg"
           >
             <Trophy className="mr-2 h-4 w-4" />

@@ -142,7 +142,7 @@ export function Navbar() {
             ) : (
               <Link
                 href="/signin"
-                className="ml-1 rounded-none bg-fire px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
+                className="ml-1 rounded-none btn-fire bg-fire px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
               >
                 Sign in
               </Link>
@@ -250,7 +250,7 @@ export function Navbar() {
               ) : (
                 <Link
                   href="/signin"
-                  className="flex items-center justify-center gap-2 w-full rounded-none bg-fire px-4 py-3 text-sm font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
+                  className="flex items-center justify-center gap-2 w-full rounded-none btn-fire bg-fire px-4 py-3 text-sm font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
                 >
                   Sign in
                 </Link>

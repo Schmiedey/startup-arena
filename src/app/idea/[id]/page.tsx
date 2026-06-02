@@ -208,7 +208,7 @@ export default function IdeaPage() {
               <>
                 <Link
                   href={`/battle?challenge=${idea.id}`}
-                  className="inline-flex items-center justify-center gap-2 bg-fire px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire-foreground transition-colors hover:bg-fire/90"
+                  className="inline-flex items-center justify-center gap-2 btn-fire bg-fire px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
                 >
                   <Swords className="h-3.5 w-3.5" />
                   Challenge this idea
@@ -233,7 +233,7 @@ export default function IdeaPage() {
             ) : (
               <Link
                 href="/battle"
-                className="inline-flex items-center justify-center gap-2 bg-fire px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire-foreground transition-colors hover:bg-fire/90 sm:col-span-2"
+                className="inline-flex items-center justify-center gap-2 btn-fire bg-fire px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90 sm:col-span-2"
               >
                 <Swords className="h-3.5 w-3.5" />
                 Vote on battles

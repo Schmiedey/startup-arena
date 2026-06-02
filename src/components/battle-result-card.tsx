@@ -149,7 +149,7 @@ export function BattleResultCard({
                   <button
                     onClick={submitReason}
                     disabled={!reason.trim() || reasonSubmitting}
-                    className="rounded-none bg-fire px-3 py-1 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    className="rounded-none btn-fire bg-fire px-3 py-1 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {reasonSubmitting ? "Saving..." : "Share reason"}
                   </button>
@@ -189,7 +189,7 @@ export function BattleResultCard({
             </Link>
           )}
           {onNext && (
-            <Button onClick={onNext} size="sm" className="rounded-none bg-fire text-fire-foreground hover:bg-fire/90">
+            <Button onClick={onNext} size="sm" className="rounded-none btn-fire bg-fire text-fire-foreground hover:bg-fire/90">
               Next battle
             </Button>
           )}

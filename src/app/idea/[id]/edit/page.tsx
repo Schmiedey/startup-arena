@@ -192,7 +192,7 @@ export default function EditIdeaPage() {
           </div>
         </div>
         <div className="flex items-center gap-3 pt-2">
-          <Button type="submit" disabled={saving} className="bg-fire text-fire-foreground hover:bg-fire/90 font-bold uppercase tracking-wider text-sm">
+          <Button type="submit" disabled={saving} className="btn-fire bg-fire text-fire-foreground hover:bg-fire/90 font-bold uppercase tracking-wider text-sm">
             {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : "Save changes"}
           </Button>
           <button

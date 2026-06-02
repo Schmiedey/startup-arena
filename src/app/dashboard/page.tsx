@@ -201,7 +201,7 @@ export default function DashboardPage() {
                   autoFocus
                   onKeyDown={(e) => e.key === "Enter" && handleNameSave()}
                 />
-                <button onClick={handleNameSave} disabled={uploading} className="rounded-none bg-fire px-2 py-1 text-xs font-bold text-fire-foreground hover:bg-fire/90">
+                <button onClick={handleNameSave} disabled={uploading} className="rounded-none btn-fire bg-fire px-2 py-1 text-xs font-bold text-fire-foreground hover:bg-fire/90">
                   <Check className="h-3 w-3" />
                 </button>
                 <button onClick={() => { setEditingProfile(false); setNameValue(session.user?.name || ""); }} className="rounded-none border border-border/50 px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
@@ -330,7 +330,7 @@ export default function DashboardPage() {
         <h2 className="text-lg font-bold">your ideas</h2>
         <Link
           href="/submit"
-          className="inline-flex items-center gap-1.5 rounded-none bg-fire px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
+          className="inline-flex items-center gap-1.5 rounded-none btn-fire bg-fire px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
         >
           <Plus className="h-3 w-3" />
           new idea

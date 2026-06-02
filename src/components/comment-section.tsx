@@ -114,7 +114,7 @@ export function CommentSection({ ideaId, comments: initialComments }: CommentSec
             <Button
               onClick={handleSubmit}
               disabled={submitting || !body.trim()}
-              className="self-end bg-fire text-fire-foreground hover:bg-fire/90"
+              className="self-end btn-fire bg-fire text-fire-foreground hover:bg-fire/90"
               size="icon"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

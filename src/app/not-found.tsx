@@ -10,7 +10,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="inline-flex items-center gap-2 bg-fire px-6 py-3 text-sm font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90 transition-colors"
+        className="inline-flex items-center gap-2 btn-fire bg-fire px-6 py-3 text-sm font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
       >
         return to Likelyr
       </Link>

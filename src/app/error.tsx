@@ -30,7 +30,7 @@ export default function GlobalError({
         </button>
         <Link
           href="/"
-          className="inline-flex items-center gap-2 bg-fire px-6 py-3 text-sm font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90 transition-colors"
+          className="inline-flex items-center gap-2 btn-fire bg-fire px-6 py-3 text-sm font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90"
         >
           home
         </Link>

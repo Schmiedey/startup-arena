@@ -274,7 +274,7 @@ export default function BattlePage() {
         </p>
         <Link
           href="/submit"
-          className="inline-flex items-center gap-2 rounded-none bg-fire px-6 py-3 font-bold text-fire-foreground hover:bg-fire/90"
+          className="inline-flex items-center gap-2 rounded-none btn-fire bg-fire px-6 py-3 font-bold text-fire-foreground hover:bg-fire/90"
         >
           Submit Your Idea
         </Link>

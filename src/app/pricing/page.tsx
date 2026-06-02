@@ -195,7 +195,7 @@ export default function PricingPage() {
                     <Button
                       onClick={() => startCheckout(checkoutPlan)}
                       disabled={loadingPlan !== null}
-                      className={`w-full rounded-none ${plan.featured ? "bg-fire text-fire-foreground hover:bg-fire/90" : ""}`}
+                      className={`w-full rounded-none ${plan.featured ? "btn-fire bg-fire text-fire-foreground hover:bg-fire/90" : ""}`}
                       variant={plan.featured ? "default" : "outline"}
                     >
                       {loadingPlan === checkoutPlan ? (

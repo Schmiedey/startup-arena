@@ -90,7 +90,7 @@ export default function SubmitPage() {
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/battle"
-            className="inline-flex items-center gap-2 rounded-none bg-fire px-6 py-3 font-bold text-fire-foreground hover:bg-fire/90"
+            className="inline-flex items-center gap-2 rounded-none btn-fire bg-fire px-6 py-3 font-bold text-fire-foreground hover:bg-fire/90"
           >
             <LikelyrLogo className="h-4 w-4" />
             Start Voting
@@ -240,7 +240,7 @@ export default function SubmitPage() {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full bg-fire text-fire-foreground hover:bg-fire/90 font-bold uppercase tracking-wider text-sm"
+              className="w-full btn-fire bg-fire text-fire-foreground hover:bg-fire/90 font-bold uppercase tracking-wider text-sm"
               size="lg"
             >
               {submitting ? (

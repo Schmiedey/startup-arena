@@ -284,7 +284,7 @@ export default function SharedBattlePage() {
                 <p className="text-xs text-muted-foreground/60">{reason.length}/500</p>
                 <div className="flex gap-2">
                   <button onClick={() => setReasonSubmitted(true)} className="rounded-none px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">Skip</button>
-                  <button onClick={submitReason} disabled={!reason.trim() || reasonSubmitting} className="rounded-none bg-fire px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity">
+                  <button onClick={submitReason} disabled={!reason.trim() || reasonSubmitting} className="rounded-none btn-fire bg-fire px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-fire-foreground hover:bg-fire/90 disabled:opacity-40 disabled:cursor-not-allowed">
                     {reasonSubmitting ? "Saving..." : "Share reason"}
                   </button>
                 </div>
