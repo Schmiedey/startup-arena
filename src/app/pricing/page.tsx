@@ -7,6 +7,7 @@ import { Check, Loader2, Sparkles, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trackClientEvent } from "@/lib/analytics-client";
 import { signinPathFor } from "@/lib/auth-redirect";
+import { LikelyrBackground } from "@/components/likelyr-background";
 
 type CheckoutPlan = "launch-pass" | "founder-pro-monthly" | "founder-pro-yearly";
 const checkoutPlans: CheckoutPlan[] = ["launch-pass", "founder-pro-monthly", "founder-pro-yearly"];
@@ -123,7 +124,9 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="relative mx-auto max-w-5xl px-6 py-10">
+      <LikelyrBackground className="opacity-[0.06]" />
+      <div className="relative z-10">
       <div className="mb-10 text-center">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-fire/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-fire">
           <Sparkles className="h-3 w-3" />
@@ -222,6 +225,7 @@ export default function PricingPage() {
         <button onClick={openBillingPortal} className="font-semibold uppercase tracking-wider text-fire hover:underline">
           Manage billing
         </button>
+      </div>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { getWinRate, getSurvivalRating } from "@/lib/elo";
 import { formatPredictionTier } from "@/lib/prediction";
 import { ideaPath } from "@/lib/seo";
 import { Avatar } from "@/components/avatar";
+import { LikelyrBackground } from "@/components/likelyr-background";
 
 type Tab = "top" | "trending" | "divisive" | "new";
 type Board = "ideas" | "predictors";
@@ -126,7 +127,9 @@ export default function LeaderboardPage() {
   const rest = sorted.slice(3);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="relative mx-auto max-w-4xl px-4 py-8">
+      <LikelyrBackground className="opacity-[0.06]" />
+      <div className="relative z-10">
       <div className="mb-8 text-center">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-fire/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-fire">
           <Trophy className="h-3 w-3" />
@@ -370,6 +373,7 @@ export default function LeaderboardPage() {
       )}
         </>
       )}
+      </div>
     </div>
   );
 }

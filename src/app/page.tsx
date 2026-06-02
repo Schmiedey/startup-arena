@@ -198,7 +198,7 @@ export default function HomePage() {
 
       {/* ── Elo ranking ── */}
       <section className="relative border-b border-border/30">
-        <LikelyrBackground className="opacity-[0.04]" />
+        <LikelyrBackground className="opacity-15" />
         <div className="relative z-10 mx-auto max-w-4xl px-6 py-16 sm:py-24">
           <div className="grid gap-12 sm:grid-cols-2">
             <ScrollReveal animation="reveal-left">
@@ -273,7 +273,7 @@ export default function HomePage() {
 
       {/* ── Trending ideas ── */}
       <section className="border-b border-border/30">
-        <LikelyrBackground className="opacity-5" />
+        <LikelyrBackground className="opacity-10" />
         <div className="relative z-10 mx-auto max-w-4xl px-6 py-16 sm:py-24">
           <ScrollReveal animation="reveal-up">
             <div className="mb-8 flex items-end justify-between">

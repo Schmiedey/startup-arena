@@ -9,6 +9,7 @@ import { Idea, Comment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Loader2, MessageSquare, MessageCircle, Share2, ArrowLeft } from "lucide-react";
 import { LikelyrLogo } from "@/components/likelyr-logo";
+import { LikelyrBackground } from "@/components/likelyr-background";
 import Link from "next/link";
 import { BattleResultCard } from "@/components/battle-result-card";
 import { extractEntityId } from "@/lib/seo";
@@ -194,7 +195,9 @@ export default function SharedBattlePage() {
   const loserIdea = loser === battle.idea_a.id ? battle.idea_a : loser === battle.idea_b.id ? battle.idea_b : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
+    <div className="relative mx-auto max-w-5xl px-4 py-6 sm:py-10">
+      <LikelyrBackground className="opacity-[0.08]" />
+      <div className="relative z-10">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/battle" className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-3 w-3" />

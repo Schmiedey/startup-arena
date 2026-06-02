@@ -14,6 +14,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { trackClientEvent } from "@/lib/analytics-client";
 import { extractEntityId, founderPath } from "@/lib/seo";
+import { LikelyrBackground } from "@/components/likelyr-background";
 
 interface VoteReason {
   reason: string;
@@ -151,7 +152,9 @@ export default function IdeaPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="relative mx-auto max-w-3xl px-6 py-10">
+      <LikelyrBackground className="opacity-[0.06]" />
+      <div className="relative z-10">
       <Link
         href="/leaderboard"
         className="mb-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
@@ -343,6 +346,7 @@ export default function IdeaPage() {
           </p>
         </div>
         <CommentSection ideaId={idea.id} comments={comments} />
+      </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { formatPredictionTier, getPredictionAccuracy } from "@/lib/prediction";
 import Link from "next/link";
 import { Plus, ExternalLink, Loader2, Camera, Check, CreditCard, CheckCircle2, Target } from "lucide-react";
 import { LikelyrLogo } from "@/components/likelyr-logo";
+import { LikelyrBackground } from "@/components/likelyr-background";
 import { Avatar } from "@/components/avatar";
 import { trackClientEvent } from "@/lib/analytics-client";
 import { ideaPath } from "@/lib/seo";
@@ -159,7 +160,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="relative mx-auto max-w-4xl px-6 py-10">
+      <LikelyrBackground className="opacity-[0.06]" />
+      <div className="relative z-10">
       {searchParams.get("checkout") === "success" && (
         <div className="mb-6 flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -396,6 +399,7 @@ export default function DashboardPage() {
           })}
         </div>
       )}
+    </div>
     </div>
   );
 }

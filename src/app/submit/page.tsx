@@ -16,6 +16,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Check, Loader2, Flame, AlertCircle } from "lucide-react";
 import { LikelyrLogo } from "@/components/likelyr-logo";
+import { LikelyrBackground } from "@/components/likelyr-background";
 import Link from "next/link";
 import { trackClientEvent } from "@/lib/analytics-client";
 import { ideaPath } from "@/lib/seo";
@@ -108,7 +109,9 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-10">
+    <div className="relative mx-auto max-w-lg px-4 py-10">
+      <LikelyrBackground className="opacity-[0.08]" />
+      <div className="relative z-10">
       <div className="mb-8 text-center">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-fire/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-fire">
           <Flame className="h-3 w-3" />
@@ -252,6 +255,7 @@ export default function SubmitPage() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

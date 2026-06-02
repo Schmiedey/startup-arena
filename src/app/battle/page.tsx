@@ -10,6 +10,7 @@ import { CATEGORIES, Idea, Comment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Loader2, MessageSquare, Share2 } from "lucide-react";
 import { LikelyrLogo } from "@/components/likelyr-logo";
+import { LikelyrBackground } from "@/components/likelyr-background";
 import { BattleResultCard } from "@/components/battle-result-card";
 import { trackClientEvent } from "@/lib/analytics-client";
 import { battlePath } from "@/lib/seo";
@@ -285,7 +286,9 @@ export default function BattlePage() {
   const loserIdea = loser === battle.idea_a.id ? battle.idea_a : loser === battle.idea_b.id ? battle.idea_b : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
+    <div className="relative mx-auto max-w-5xl px-4 py-6 sm:py-10">
+      <LikelyrBackground className="opacity-[0.08]" />
+      <div className="relative z-10">
       <div className="mb-8 text-center">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-fire/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-fire">
           <LikelyrLogo className="h-3 w-3" />
@@ -483,6 +486,7 @@ export default function BattlePage() {
           </Button>
         </div>
       )}
+      </div>
     </div>
   );
 }
