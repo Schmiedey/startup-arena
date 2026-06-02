@@ -333,6 +333,7 @@ export default function SharedBattlePage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

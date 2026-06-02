@@ -291,8 +291,7 @@ export default function SignInPage() {
           <Link href="/terms" className="text-fire hover:underline">terms</Link> and{" "}
           <Link href="/privacy" className="text-fire hover:underline">privacy policy</Link>.
           we only use your email for auth.
-</p>
-        </div>
+        </p>
       </div>
     </div>
   );
