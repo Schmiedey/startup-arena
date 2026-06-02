@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Loader2, Sparkles, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trackClientEvent } from "@/lib/analytics-client";
+import { signinPathFor } from "@/lib/auth-redirect";
 
 type CheckoutPlan = "launch-pass" | "founder-pro-monthly" | "founder-pro-yearly";
+const checkoutPlans: CheckoutPlan[] = ["launch-pass", "founder-pro-monthly", "founder-pro-yearly"];
 
 async function readJsonResponse(res: Response): Promise<Record<string, unknown>> {
   return res.json().catch(() => ({}));
+}
+
+function isCheckoutPlan(value: string | null): value is CheckoutPlan {
+  return checkoutPlans.includes(value as CheckoutPlan);
 }
 
 const plans = [
@@ -53,10 +59,12 @@ const plans = [
 
 export default function PricingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const checkoutStartedFromUrl = useRef(false);
   const [loadingPlan, setLoadingPlan] = useState<CheckoutPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function startCheckout(plan: CheckoutPlan) {
+  const startCheckout = useCallback(async (plan: CheckoutPlan) => {
     setLoadingPlan(plan);
     setError(null);
     trackClientEvent("checkout_cta_clicked", { plan });
@@ -71,7 +79,7 @@ export default function PricingPage() {
 
       if (res.status === 401) {
         trackClientEvent("checkout_auth_required", { plan });
-        router.push("/signin");
+        router.push(signinPathFor(`/pricing?checkout=${plan}`, window.location.origin));
         return;
       }
       if (!res.ok || typeof data.url !== "string") {
@@ -85,7 +93,15 @@ export default function PricingPage() {
     } finally {
       setLoadingPlan(null);
     }
-  }
+  }, [router]);
+
+  useEffect(() => {
+    const checkoutPlan = searchParams.get("checkout");
+    if (checkoutStartedFromUrl.current || !isCheckoutPlan(checkoutPlan)) return;
+
+    checkoutStartedFromUrl.current = true;
+    void startCheckout(checkoutPlan);
+  }, [searchParams, startCheckout]);
 
   async function openBillingPortal() {
     setError(null);
@@ -94,7 +110,7 @@ export default function PricingPage() {
       const res = await fetch("/api/billing/portal", { method: "POST" });
       const data = await readJsonResponse(res);
       if (res.status === 401) {
-        router.push("/signin");
+        router.push(signinPathFor("/pricing", window.location.origin));
         return;
       }
       if (!res.ok || typeof data.url !== "string") {

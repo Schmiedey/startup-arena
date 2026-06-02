@@ -12,6 +12,7 @@ interface AdminUser {
   image: string | null;
   is_admin: boolean;
   banned: boolean;
+  is_bot?: boolean;
   ideas_count: number | string;
   total_wins: number | string;
   total_losses: number | string;
@@ -21,6 +22,8 @@ interface AdminUser {
 interface UsersData {
   users: AdminUser[];
   total: number;
+  botTotal?: number;
+  totalRecords?: number;
   page: number;
   totalPages: number;
 }
@@ -97,7 +100,9 @@ export default function AdminUsersPage() {
         <div className="py-20 text-center text-muted-foreground">Failed to load</div>
       ) : (
         <>
-          <p className="mb-4 text-xs text-muted-foreground">{data.total} users total</p>
+          <p className="mb-4 text-xs text-muted-foreground">
+            {data.total} real customer users total · {data.botTotal ?? 0} bots labeled and excluded
+          </p>
           <div className="space-y-1">
             {data.users.map((u) => {
               const karma = Number(u.total_wins) * 5 + Number(u.votes_cast) * 1 + Number(u.ideas_count) * 10;
@@ -107,6 +112,7 @@ export default function AdminUsersPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm truncate">{u.name || "Anonymous"}</span>
+                      {u.is_bot && <span className="rounded-full bg-sky-400/15 px-1.5 py-0.5 text-[10px] font-bold text-sky-400">BOT</span>}
                       {u.is_admin && <span className="rounded-full bg-fire/15 px-1.5 py-0.5 text-[10px] font-bold text-fire">ADMIN</span>}
                       {u.banned && <span className="rounded-full bg-red-500/15 px-1.5 py-0.5 text-[10px] font-bold text-red-400">BANNED</span>}
                     </div>

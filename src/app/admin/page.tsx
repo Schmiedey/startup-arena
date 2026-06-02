@@ -17,6 +17,15 @@ interface Stats {
   newCommentsToday: number;
 }
 
+interface BotStats {
+  users: number | string;
+  ideas: number | string;
+  votes: number | string;
+  battles: number | string;
+  comments: number | string;
+  predictors: number | string;
+}
+
 interface TopIdea {
   id: string;
   name: string;
@@ -24,6 +33,7 @@ interface TopIdea {
   elo_score: number;
   wins: number;
   losses: number;
+  is_bot?: boolean;
 }
 
 interface CategoryBreakdown {
@@ -37,10 +47,12 @@ interface RecentActivity {
   user_name: string | null;
   idea_name: string;
   created_at: string;
+  is_bot?: boolean;
 }
 
 interface AdminStatsData {
   stats: Stats;
+  botStats: BotStats;
   topIdeas: TopIdea[];
   categoryBreakdown: CategoryBreakdown[];
   recentActivity: RecentActivity[];
@@ -65,28 +77,35 @@ export default function AdminOverviewPage() {
   if (!data) return <AdminLayout><div className="py-20 text-center text-muted-foreground">Failed to load stats</div></AdminLayout>;
 
   const stats = data.stats;
+  const botStats = data.botStats;
 
   return (
     <AdminLayout>
       <div className="grid grid-cols-2 gap-px border border-border/30 sm:grid-cols-5">
         {[
-          { label: "Users", value: stats.users, today: stats.newUsersToday, icon: Users, color: "text-blue-400" },
-          { label: "Ideas", value: stats.ideas, today: stats.newIdeasToday, icon: Lightbulb, color: "text-fire" },
-          { label: "Votes", value: stats.votes, today: stats.newVotesToday, icon: Vote, color: "text-emerald-400" },
-          { label: "Battles", value: stats.battles, today: null, icon: Swords, color: "text-amber-400" },
-          { label: "Comments", value: stats.comments, today: stats.newCommentsToday, icon: MessageSquare, color: "text-violet-400" },
-        ].map(({ label, value, today, icon: Icon, color }) => (
+          { label: "Users", value: stats.users, today: stats.newUsersToday, botValue: botStats.users, icon: Users, color: "text-blue-400" },
+          { label: "Ideas", value: stats.ideas, today: stats.newIdeasToday, botValue: botStats.ideas, icon: Lightbulb, color: "text-fire" },
+          { label: "Votes", value: stats.votes, today: stats.newVotesToday, botValue: botStats.votes, icon: Vote, color: "text-emerald-400" },
+          { label: "Battles", value: stats.battles, today: null, botValue: botStats.battles, icon: Swords, color: "text-amber-400" },
+          { label: "Comments", value: stats.comments, today: stats.newCommentsToday, botValue: botStats.comments, icon: MessageSquare, color: "text-violet-400" },
+        ].map(({ label, value, today, botValue, icon: Icon, color }) => (
           <div key={label} className="bg-card/30 p-4">
             <div className="flex items-center gap-2 mb-1">
               <Icon className={`h-3.5 w-3.5 ${color}`} />
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Real {label}</p>
             </div>
             <p className="text-2xl font-black font-[family-name:var(--font-chakra)]">{value}</p>
             {today !== null && today > 0 && (
               <p className="text-[10px] text-emerald-400">+{today} today</p>
             )}
+            <p className="mt-1 text-[10px] uppercase tracking-widest text-sky-400">{Number(botValue)} bot/demo excluded</p>
           </div>
         ))}
+      </div>
+
+      <div className="mt-3 border border-sky-400/20 bg-sky-400/5 px-4 py-3 text-xs text-sky-200">
+        Admin totals count real customer users only. Admin, bot, and seeded demo content is excluded from headline totals;
+        {` ${Number(botStats.predictors)} predictor bots`} are available for the public predictor board.
       </div>
 
       <div className="mt-8 grid gap-8 sm:grid-cols-2">
@@ -101,6 +120,7 @@ export default function AdminOverviewPage() {
                     <span className="text-xs font-mono tabular-nums text-muted-foreground">{i + 1}</span>
                     <span className="text-sm font-semibold truncate">{idea.name}</span>
                     {idea.founder && <span className="text-xs text-muted-foreground hidden sm:inline">by {idea.founder}</span>}
+                    {idea.is_bot && <span className="rounded-full bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-sky-400">BOT</span>}
                   </div>
                   <div className="flex items-center gap-3 text-xs shrink-0">
                     <span className="text-fire font-bold">{idea.elo_score}</span>
@@ -143,6 +163,7 @@ export default function AdminOverviewPage() {
                   "bg-violet-500/15 text-violet-400"
                 }`}>{act.type}</span>
                 <span className="text-sm truncate">{act.user_name || "Anonymous"}</span>
+                {act.is_bot && <span className="rounded-full bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-sky-400">BOT</span>}
                 {act.type === "vote" && <span className="text-xs text-muted-foreground">voted for {act.idea_name}</span>}
                 {act.type === "idea" && <span className="text-xs text-muted-foreground">submitted {act.idea_name}</span>}
                 {act.type === "comment" && <span className="text-xs text-muted-foreground">commented on {act.idea_name}</span>}

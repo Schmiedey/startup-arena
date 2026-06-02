@@ -15,7 +15,7 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
 
   try {
     const userResult = await sql`
-      SELECT id, name, image, created_at FROM users WHERE id = ${id}
+      SELECT id, name, image, COALESCE(is_bot, false) AS is_bot, created_at FROM users WHERE id = ${id}
     `;
     user = userResult.rows[0];
     if (!user) notFound();

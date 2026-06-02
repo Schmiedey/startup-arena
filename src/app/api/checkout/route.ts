@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { CHECKOUT_PLANS, type CheckoutPlan, getBillingUserByEmail } from "@/lib/billing";
+import { CHECKOUT_PLANS, type CheckoutPlan, clearStripeCustomerId, getBillingUserByEmail } from "@/lib/billing";
 import { getStripe } from "@/lib/stripe";
 import { trackEvent } from "@/lib/analytics";
 import { rateLimit, rateLimitIdentity, rateLimitResponse } from "@/lib/rate-limit";
+import {
+  checkoutErrorMessage,
+  checkoutSessionParams,
+  checkoutSessionParamsWithoutCustomer,
+  isMissingStripeCustomerError,
+  logCheckoutError,
+} from "@/lib/checkout";
 
 function isCheckoutPlan(value: unknown): value is CheckoutPlan {
   return typeof value === "string" && value in CHECKOUT_PLANS;
@@ -38,43 +45,22 @@ export async function POST(request: Request) {
     const origin = new URL(request.url).origin;
     const stripe = getStripe();
 
-    const checkoutSession = await stripe.checkout.sessions.create({
-      mode: checkoutPlan.mode,
-      customer: user.stripe_customer_id ?? undefined,
-      customer_email: user.stripe_customer_id ? undefined : user.email,
-      client_reference_id: user.id,
-      allow_promotion_codes: true,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "usd",
-            unit_amount: checkoutPlan.amount,
-            product_data: {
-              name: checkoutPlan.name,
-              description: checkoutPlan.description,
-            },
-            recurring: checkoutPlan.interval ? { interval: checkoutPlan.interval } : undefined,
-          },
-        },
-      ],
-      metadata: {
+    let checkoutSession;
+    try {
+      checkoutSession = await stripe.checkout.sessions.create(checkoutSessionParams(plan, user, origin));
+    } catch (error) {
+      const staleCustomerId = user.stripe_customer_id;
+      if (!isMissingStripeCustomerError(error, staleCustomerId) || !staleCustomerId) throw error;
+
+      logCheckoutError(error, {
         userId: user.id,
         plan,
-        entitlement: checkoutPlan.entitlement,
-      },
-      subscription_data: checkoutPlan.mode === "subscription"
-        ? {
-            metadata: {
-              userId: user.id,
-              plan,
-              entitlement: checkoutPlan.entitlement,
-            },
-          }
-        : undefined,
-      success_url: `${origin}/dashboard?checkout=success`,
-      cancel_url: `${origin}/pricing?checkout=cancelled`,
-    });
+        stripe_customer_id: staleCustomerId,
+        recovered: true,
+      });
+      await clearStripeCustomerId(user.id, staleCustomerId);
+      checkoutSession = await stripe.checkout.sessions.create(checkoutSessionParamsWithoutCustomer(plan, user, origin));
+    }
 
     await trackEvent({
       name: "checkout_started",
@@ -90,10 +76,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: checkoutSession.url });
   } catch (error) {
-    const message = error instanceof Error && error.message === "STRIPE_SECRET_KEY is not configured"
-      ? "Stripe checkout is not configured yet."
-      : "Could not start checkout. Try again soon.";
+    logCheckoutError(error, { recovered: false });
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: checkoutErrorMessage(error) }, { status: 500 });
   }
 }

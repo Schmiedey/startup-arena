@@ -1,25 +1,90 @@
 import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import { sql } from "@vercel/postgres";
 import { trackEvent } from "@/lib/analytics";
+import { likelyrAuthAdapter } from "@/lib/auth-adapter";
+import { safeAuthRedirect } from "@/lib/auth-redirect";
+import { isGmailEmailConfigured, sendSignInEmail } from "@/lib/email";
+import { normalizeEmail, verifyPassword } from "@/lib/password-auth";
+
+const gmailEmailConfigured = isGmailEmailConfigured();
+const emailProvider = {
+  id: "email",
+  type: "email" as const,
+  name: "Email",
+  from: process.env.GMAIL_SENDER_EMAIL ? `Likelyr <${process.env.GMAIL_SENDER_EMAIL}>` : "Likelyr",
+  maxAge: 15 * 60,
+  async sendVerificationRequest({ identifier, url }: { identifier: string; url: string }) {
+    await sendSignInEmail({ to: identifier, url });
+  },
+};
+
+const credentialsProvider = Credentials({
+  id: "credentials",
+  name: "Email and password",
+  credentials: {
+    email: { label: "Email", type: "email" },
+    password: { label: "Password", type: "password" },
+  },
+  async authorize(credentials) {
+    const email = normalizeEmail(credentials?.email);
+    const password = typeof credentials?.password === "string" ? credentials.password : "";
+    if (!email || !password) return null;
+
+    const result = await sql`
+      SELECT id, name, email, image, password_hash, email_verified_at
+      FROM users
+      WHERE email = ${email}
+    `;
+    const user = result.rows[0] as
+      | {
+          id: string;
+          name: string | null;
+          email: string;
+          image: string | null;
+          password_hash: string | null;
+          email_verified_at: Date | string | null;
+        }
+      | undefined;
+
+    if (!user?.password_hash) return null;
+    if (!user.email_verified_at) return null;
+    if (!(await verifyPassword(password, user.password_hash))) return null;
+
+    return {
+      id: user.id,
+      name: user.name ?? "Anonymous",
+      email: user.email,
+      image: user.image,
+    };
+  },
+});
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [GitHub, Google],
+  adapter: gmailEmailConfigured ? likelyrAuthAdapter : undefined,
+  session: { strategy: "jwt" },
+  trustHost: true,
+  providers: [GitHub, Google, credentialsProvider, ...(gmailEmailConfigured ? [emailProvider] : [])],
   pages: {
     signIn: "/signin",
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      return `${baseUrl}${safeAuthRedirect(url, baseUrl)}`;
+    },
     async signIn({ user, account }) {
-      if (!user.email) return false;
+      const email = normalizeEmail(user.email);
+      if (!email) return false;
       try {
-        const existing = await sql`SELECT id FROM users WHERE email = ${user.email}`;
+        const existing = await sql`SELECT id FROM users WHERE email = ${email}`;
         let userId: string | null = null;
         let isNewUser = false;
         if (existing.rows.length === 0) {
           const created = await sql`
             INSERT INTO users (name, email, image)
-            VALUES (${user.name ?? "Anonymous"}, ${user.email}, ${user.image ?? null})
+            VALUES (${user.name ?? "Anonymous"}, ${email}, ${user.image ?? null})
             RETURNING id
           `;
           userId = created.rows[0]?.id ?? null;
@@ -27,16 +92,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         } else {
           const updated = await sql`
             UPDATE users SET name = COALESCE(${user.name}, name), image = COALESCE(${user.image}, image)
-            WHERE email = ${user.email}
+            WHERE email = ${email}
             RETURNING id
           `;
           userId = updated.rows[0]?.id ?? existing.rows[0]?.id ?? null;
         }
-        await trackEvent({
+        void trackEvent({
           name: isNewUser ? "user_signed_up" : "user_signed_in",
           userId,
           path: "/api/auth",
           metadata: { provider: account?.provider ?? "unknown" },
+        }).catch((error) => {
+          console.error("Error tracking sign in:", error);
         });
       } catch (error) {
         console.error("Error in signIn callback:", error);

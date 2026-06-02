@@ -24,6 +24,7 @@ export function Navbar() {
   const { resolvedTheme, setTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const prevPathname = useRef(pathname);
@@ -45,6 +46,21 @@ export function Navbar() {
       document.body.style.overflow = "";
     };
   }, [mobileMenuOpen]);
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+
+    try {
+      const result = await signOut({ redirect: false, redirectTo: "/" });
+      window.location.assign(result.url || "/");
+    } catch (error) {
+      console.error("Sign out failed:", error);
+      setSigningOut(false);
+    }
+  }
 
   return (
     <>
@@ -113,11 +129,12 @@ export function Navbar() {
                       </Link>
                     )}
                     <button
-                      onClick={() => { setDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
+                      onClick={handleSignOut}
+                      disabled={signingOut}
                       className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-panel hover:text-foreground"
                     >
                       <LogOut className="h-3 w-3" />
-                      Sign out
+                      {signingOut ? "Signing out..." : "Sign out"}
                     </button>
                   </div>
                 )}
@@ -222,11 +239,12 @@ export function Navbar() {
                     </Link>
                   )}
                   <button
-                    onClick={() => { setMobileMenuOpen(false); signOut({ callbackUrl: "/" }); }}
+                    onClick={handleSignOut}
+                    disabled={signingOut}
                     className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-panel"
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign out
+                    {signingOut ? "Signing out..." : "Sign out"}
                   </button>
                 </div>
               ) : (

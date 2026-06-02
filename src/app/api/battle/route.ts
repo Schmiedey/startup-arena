@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { checkBanned, bannedResponse } from "@/lib/admin";
 import { trackEvent } from "@/lib/analytics";
+import { hasProAccess, normalizePlan } from "@/lib/billing";
 import { rateLimit, rateLimitIdentity, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
@@ -36,17 +37,31 @@ export async function GET(request: Request) {
   }
 
   const session = await auth();
-  let user: { id: string } | null = null;
+  let user: { id: string; plan: "free" | "launch" | "pro" } | null = null;
 
   if (session?.user?.email) {
     const banCheck = await checkBanned();
     if (banCheck?.banned) return bannedResponse();
 
-    const userResult = await sql`SELECT id FROM users WHERE email = ${session.user.email}`;
-    user = userResult.rows[0] as { id: string } | undefined ?? null;
+    const userResult = await sql`
+      SELECT id, plan, subscription_status, launch_pass_purchased_at
+      FROM users
+      WHERE email = ${session.user.email}
+    `;
+    const row = userResult.rows[0] as
+      | { id: string; plan: string | null; subscription_status: string | null; launch_pass_purchased_at: string | null }
+      | undefined;
+    user = row ? { id: row.id, plan: normalizePlan(row) } : null;
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+  }
+
+  if (category && !hasProAccess(user?.plan ?? "free")) {
+    return NextResponse.json(
+      { error: "Category battle testing is a Founder Pro feature.", upgrade: "pro" },
+      { status: user ? 403 : 401 }
+    );
   }
 
   const limited = await rateLimit(request, {

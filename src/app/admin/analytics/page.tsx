@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import {
   AlertTriangle,
+  Activity,
   BarChart3,
   CreditCard,
+  Crown,
+  DollarSign,
   ExternalLink,
   Eye,
   Lightbulb,
@@ -13,6 +16,7 @@ import {
   Share2,
   Users,
   Vote,
+  Zap,
 } from "lucide-react";
 
 interface AnalyticsSummary {
@@ -62,6 +66,93 @@ interface RecentRow {
   created_at: string;
 }
 
+interface RevenueSummary {
+  gross_revenue_cents: number;
+  launch_revenue_cents: number;
+  pro_revenue_cents: number;
+  checkout_started: number;
+  checkout_completed: number;
+  launch_purchases: number;
+  pro_purchases: number;
+  launch_users: number;
+  pro_users: number;
+  paid_users: number;
+  active_subscriptions: number;
+  trialing_subscriptions: number;
+  attention_subscriptions: number;
+}
+
+interface PlanBreakdownRow {
+  plan: "free" | "launch" | "pro";
+  users: number;
+}
+
+interface SubscriptionStatusRow {
+  status: string;
+  users: number;
+}
+
+interface CheckoutByPlanRow {
+  plan: string;
+  started: number;
+  completed: number;
+  revenue_cents: number;
+}
+
+interface PaidUserRow {
+  id: string;
+  name: string | null;
+  email: string;
+  plan: "free" | "launch" | "pro";
+  subscription_status: string | null;
+  launch_pass_purchased_at: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  created_at: string;
+  ideas: number;
+  votes: number;
+  last_paid_event_at: string | null;
+}
+
+interface PaidTimelineRow {
+  day: string;
+  name: string;
+  plan: string;
+  count: number;
+  revenue_cents: number;
+}
+
+interface FeatureUsageRow {
+  name: string;
+  segment: string;
+  count: number;
+}
+
+interface EntitlementAudit {
+  free_over_limit: number;
+  launch_over_limit: number;
+  pro_without_active_subscription: number;
+  pro_status_mismatch: number;
+  launch_limit_ok: number;
+  pro_unlimited_ok: number;
+}
+
+interface PaymentEventRow {
+  name: string;
+  user_id: string | null;
+  path: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+interface BotInventory {
+  users: number | string;
+  ideas: number | string;
+  votes: number | string;
+  comments: number | string;
+  predictors: number | string;
+}
+
 interface AnalyticsData {
   days: number;
   summary: AnalyticsSummary;
@@ -71,6 +162,16 @@ interface AnalyticsData {
   topReferrers: ReferrerRow[];
   funnel: FunnelRow[];
   recent: RecentRow[];
+  revenue: RevenueSummary;
+  planBreakdown: PlanBreakdownRow[];
+  subscriptionStatuses: SubscriptionStatusRow[];
+  checkoutByPlan: CheckoutByPlanRow[];
+  paidUsers: PaidUserRow[];
+  paidTimeline: PaidTimelineRow[];
+  featureUsage: FeatureUsageRow[];
+  entitlementAudit: EntitlementAudit;
+  paymentEvents: PaymentEventRow[];
+  botInventory: BotInventory;
 }
 
 const eventLabels: Record<string, string> = {
@@ -88,6 +189,15 @@ const eventLabels: Record<string, string> = {
   client_error: "Client errors",
   checkout_started: "Checkout started",
   checkout_completed: "Checkout completed",
+  checkout_cta_clicked: "Checkout CTA",
+  billing_portal_opened: "Billing portal",
+  subscription_updated: "Subscription updated",
+  subscription_deleted: "Subscription deleted",
+  idea_limit_hit: "Idea limit hit",
+  challenge_share_clicked: "Challenge shared",
+  challenge_link_upgrade_clicked: "Challenge upgrade",
+  category_battle_upgrade_clicked: "Category upgrade",
+  battle_created: "Battles created",
 };
 
 const funnelLabels: Record<string, string> = {
@@ -98,6 +208,23 @@ const funnelLabels: Record<string, string> = {
   started_checkout: "Started checkout",
   paid: "Paid",
 };
+
+function money(cents: number | string | null | undefined) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
+    Number(cents ?? 0) / 100
+  );
+}
+
+function percent(part: number, whole: number) {
+  if (!whole) return "0%";
+  return `${Math.round((part / whole) * 100)}%`;
+}
+
+function formatMetadata(metadata: Record<string, unknown>) {
+  const entries = Object.entries(metadata).slice(0, 4);
+  if (!entries.length) return "No metadata";
+  return entries.map(([key, value]) => `${key}: ${String(value)}`).join(" · ");
+}
 
 const postHogProjectUrl = "https://us.posthog.com/project/446290";
 
@@ -198,11 +325,16 @@ export default function AdminAnalyticsPage() {
         <div className="py-20 text-center text-muted-foreground">Failed to load analytics</div>
       ) : (
         <>
+          <div className="mb-4 border border-sky-400/20 bg-sky-400/5 px-4 py-3 text-xs text-sky-200">
+            Real-user analytics exclude seeded bot/demo accounts and admin-owned records. Bot/demo inventory: {Number(data.botInventory.users)} users,
+            {` ${Number(data.botInventory.ideas)} ideas, ${Number(data.botInventory.votes)} votes, ${Number(data.botInventory.comments)} comments, ${Number(data.botInventory.predictors)} predictors.`}
+          </div>
+
           <div className="grid grid-cols-2 gap-px border border-border/30 sm:grid-cols-4 lg:grid-cols-8">
             {[
               { label: "Events", value: data.summary.total_events, icon: BarChart3, color: "text-blue-400" },
               { label: "Visitors", value: data.summary.unique_visitors, icon: Users, color: "text-sky-400" },
-              { label: "Users", value: data.summary.signed_in_users, icon: Users, color: "text-violet-400" },
+              { label: "Real users", value: data.summary.signed_in_users, icon: Users, color: "text-violet-400" },
               { label: "Views", value: data.summary.page_views, icon: Eye, color: "text-emerald-400" },
               { label: "Signups", value: data.summary.signups, icon: Users, color: "text-emerald-400" },
               { label: "Ideas", value: data.summary.idea_submits, icon: Lightbulb, color: "text-fire" },
@@ -219,6 +351,195 @@ export default function AdminAnalyticsPage() {
                 <p className="text-2xl font-black font-[family-name:var(--font-chakra)]">{Number(value)}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-8">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider">Paid Subscription Command Center</h3>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {data.days} day window
+              </span>
+            </div>
+            <div className="grid gap-px border border-border/30 sm:grid-cols-2 lg:grid-cols-6">
+              {[
+                { label: "Gross revenue", value: money(data.revenue.gross_revenue_cents), detail: "completed checkout", icon: DollarSign, color: "text-emerald-400" },
+                { label: "Launch revenue", value: money(data.revenue.launch_revenue_cents), detail: `${data.revenue.launch_purchases} purchases`, icon: Zap, color: "text-fire" },
+                { label: "Pro revenue", value: money(data.revenue.pro_revenue_cents), detail: `${data.revenue.pro_purchases} purchases`, icon: Crown, color: "text-violet-400" },
+                { label: "Paid users", value: data.revenue.paid_users, detail: `${data.revenue.launch_users} launch / ${data.revenue.pro_users} pro`, icon: Users, color: "text-sky-400" },
+                { label: "Active subs", value: data.revenue.active_subscriptions, detail: `${data.revenue.trialing_subscriptions} trialing`, icon: Activity, color: "text-emerald-400" },
+                { label: "Needs attention", value: data.revenue.attention_subscriptions, detail: "past due/unpaid/incomplete", icon: AlertTriangle, color: data.revenue.attention_subscriptions ? "text-red-400" : "text-muted-foreground" },
+              ].map(({ label, value, detail, icon: Icon, color }) => (
+                <div key={label} className="bg-card/30 p-4">
+                  <div className="mb-1 flex items-center gap-2">
+                    <Icon className={`h-3.5 w-3.5 ${color}`} />
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
+                  </div>
+                  <p className="text-2xl font-black font-[family-name:var(--font-chakra)]">{value}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">{detail}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+              <div>
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Plan Mix</h4>
+                <div className="space-y-1">
+                  {data.planBreakdown.map((row) => (
+                    <div key={row.plan} className="flex items-center justify-between border border-border/20 bg-card/10 px-3 py-2 text-xs">
+                      <span className="font-semibold uppercase">{row.plan}</span>
+                      <span className="text-fire font-bold">{row.users}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Subscription Status</h4>
+                <div className="space-y-1">
+                  {data.subscriptionStatuses.map((row) => (
+                    <div key={row.status} className="flex items-center justify-between border border-border/20 bg-card/10 px-3 py-2 text-xs">
+                      <span className="font-semibold uppercase">{row.status}</span>
+                      <span className="text-fire font-bold">{row.users}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Entitlement Audit</h4>
+                <div className="space-y-1">
+                  {[
+                    ["Free users over 1 idea", data.entitlementAudit.free_over_limit],
+                    ["Launch users over 5 ideas", data.entitlementAudit.launch_over_limit],
+                    ["Pro without active sub", data.entitlementAudit.pro_without_active_subscription],
+                    ["Pro status mismatches", data.entitlementAudit.pro_status_mismatch],
+                    ["Launch limit OK", data.entitlementAudit.launch_limit_ok],
+                    ["Pro unlimited OK", data.entitlementAudit.pro_unlimited_ok],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between border border-border/20 bg-card/10 px-3 py-2 text-xs">
+                      <span>{label}</span>
+                      <span className={`font-bold ${Number(value) > 0 && String(label).includes("over") ? "text-red-400" : "text-fire"}`}>{Number(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+              <div>
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Checkout Funnel by Plan</h4>
+                <div className="space-y-1">
+                  {data.checkoutByPlan.map((row) => (
+                    <div key={row.plan} className="border border-border/20 bg-card/10 px-3 py-2 text-xs">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold">{row.plan}</span>
+                        <span className="text-fire font-bold">{money(row.revenue_cents)}</span>
+                      </div>
+                      <p className="mt-1 text-muted-foreground">
+                        {row.started} started · {row.completed} completed · {percent(row.completed, row.started)} conversion
+                      </p>
+                    </div>
+                  ))}
+                  {data.checkoutByPlan.length === 0 && <p className="text-xs text-muted-foreground">No checkout activity in this window.</p>}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Paid Users</h4>
+                <div className="overflow-x-auto border border-border/30">
+                  <table className="w-full min-w-[760px] text-left text-xs">
+                    <thead className="border-b border-border/30 text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2">User</th>
+                        <th className="px-3 py-2">Plan</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2 text-right">Ideas</th>
+                        <th className="px-3 py-2 text-right">Votes</th>
+                        <th className="px-3 py-2">Last paid event</th>
+                        <th className="px-3 py-2">Stripe</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.paidUsers.map((user) => (
+                        <tr key={user.id} className="border-b border-border/10">
+                          <td className="px-3 py-2">
+                            <p className="font-semibold">{user.name || "Anonymous"}</p>
+                            <p className="text-muted-foreground">{user.email}</p>
+                          </td>
+                          <td className="px-3 py-2 font-bold uppercase text-fire">{user.plan}</td>
+                          <td className="px-3 py-2">{user.subscription_status || (user.launch_pass_purchased_at ? "paid once" : "none")}</td>
+                          <td className="px-3 py-2 text-right">{user.ideas}</td>
+                          <td className="px-3 py-2 text-right">{user.votes}</td>
+                          <td className="px-3 py-2">{user.last_paid_event_at ? new Date(user.last_paid_event_at).toLocaleDateString() : "none"}</td>
+                          <td className="px-3 py-2 text-muted-foreground">
+                            {user.stripe_subscription_id ? "subscription" : user.stripe_customer_id ? "customer" : "none"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+              <div>
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Paid Feature Usage</h4>
+                <div className="grid gap-1 sm:grid-cols-2">
+                  {data.featureUsage.map((row) => (
+                    <div key={`${row.name}-${row.segment}`} className="flex items-center justify-between gap-3 border border-border/20 bg-card/10 px-3 py-2 text-xs">
+                      <span className="truncate">{eventLabels[row.name] ?? row.name} · {row.segment}</span>
+                      <span className="font-bold text-fire">{row.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Paid Timeline</h4>
+                <div className="max-h-72 overflow-auto border border-border/30">
+                  <table className="w-full min-w-[520px] text-left text-xs">
+                    <thead className="sticky top-0 border-b border-border/30 bg-background text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2">Day</th>
+                        <th className="px-3 py-2">Event</th>
+                        <th className="px-3 py-2">Plan</th>
+                        <th className="px-3 py-2 text-right">Count</th>
+                        <th className="px-3 py-2 text-right">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.paidTimeline.map((row) => (
+                        <tr key={`${row.day}-${row.name}-${row.plan}`} className="border-b border-border/10">
+                          <td className="px-3 py-2">{new Date(row.day).toLocaleDateString()}</td>
+                          <td className="px-3 py-2">{eventLabels[row.name] ?? row.name}</td>
+                          <td className="px-3 py-2">{row.plan}</td>
+                          <td className="px-3 py-2 text-right">{row.count}</td>
+                          <td className="px-3 py-2 text-right font-bold text-fire">{money(row.revenue_cents)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <div>
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Recent Payment Events</h4>
+                <div className="grid gap-1 lg:grid-cols-2">
+                  {data.paymentEvents.slice(0, 20).map((event, index) => (
+                    <div key={`${event.created_at}-${index}`} className="border border-border/20 bg-card/10 px-3 py-2 text-xs">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold">{eventLabels[event.name] ?? event.name}</span>
+                        <span className="text-muted-foreground">{new Date(event.created_at).toLocaleString()}</span>
+                      </div>
+                      <p className="mt-1 truncate text-muted-foreground">{formatMetadata(event.metadata)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8">

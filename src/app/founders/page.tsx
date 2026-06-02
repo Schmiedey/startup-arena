@@ -10,6 +10,7 @@ interface Founder {
   id: string;
   name: string | null;
   image: string | null;
+  is_bot?: boolean;
   created_at: string;
   ideas_count: string;
   total_wins: string;

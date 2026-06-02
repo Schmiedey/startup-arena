@@ -73,6 +73,7 @@ export interface Predictor {
   id: string;
   name: string | null;
   image: string | null;
+  is_bot?: boolean;
   prediction_elo: number;
   prediction_wins: number;
   prediction_losses: number;

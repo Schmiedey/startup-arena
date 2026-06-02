@@ -6,13 +6,16 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT,
   email TEXT UNIQUE NOT NULL,
   image TEXT,
+  password_hash TEXT,
   is_admin BOOLEAN DEFAULT FALSE,
   banned BOOLEAN DEFAULT FALSE,
+  is_bot BOOLEAN DEFAULT FALSE,
   plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'launch', 'pro')),
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
   subscription_status TEXT,
   launch_pass_purchased_at TIMESTAMPTZ,
+  email_verified_at TIMESTAMPTZ,
   prediction_elo INTEGER DEFAULT 1000,
   prediction_wins INTEGER DEFAULT 0,
   prediction_losses INTEGER DEFAULT 0,
@@ -24,11 +27,14 @@ CREATE TABLE IF NOT EXISTS users (
 -- Add banned column if it doesn't exist (for existing deployments)
 DO $$ BEGIN
   ALTER TABLE users ADD COLUMN IF NOT EXISTS banned BOOLEAN DEFAULT FALSE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS is_bot BOOLEAN DEFAULT FALSE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free';
   ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS launch_pass_purchased_at TIMESTAMPTZ;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_elo INTEGER DEFAULT 1000;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_wins INTEGER DEFAULT 0;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_losses INTEGER DEFAULT 0;
@@ -65,6 +71,19 @@ CREATE TABLE IF NOT EXISTS verification_tokens (
   identifier TEXT NOT NULL,
   expires TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS user_auth_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  token_hash TEXT UNIQUE NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('email_verification', 'password_reset')),
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS user_auth_tokens_user_type_idx ON user_auth_tokens(user_id, type);
+CREATE INDEX IF NOT EXISTS user_auth_tokens_expires_at_idx ON user_auth_tokens(expires_at);
 
 CREATE TABLE IF NOT EXISTS ideas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -148,6 +167,7 @@ CREATE INDEX IF NOT EXISTS idx_votes_user_id ON votes(user_id);
 CREATE INDEX IF NOT EXISTS idx_votes_prediction_correct ON votes(prediction_correct);
 CREATE INDEX IF NOT EXISTS idx_comments_idea_id ON comments(idea_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_is_bot ON users(is_bot);
 CREATE INDEX IF NOT EXISTS idx_users_prediction_elo ON users(prediction_elo DESC);
 CREATE INDEX IF NOT EXISTS idx_users_stripe_customer_id ON users(stripe_customer_id);
 CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription_id ON users(stripe_subscription_id);

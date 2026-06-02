@@ -1,17 +1,17 @@
 -- Seed data for Likelyr
 -- Run after schema
 
-INSERT INTO users (id, name, email, image) VALUES
-('a0000000-0000-0000-0000-000000000001', 'Marcus Chen', 'marcus@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=marcus'),
-('a0000000-0000-0000-0000-000000000002', 'Sarah Park', 'sarah@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=sarah'),
-('a0000000-0000-0000-0000-000000000003', 'Dev Patel', 'dev@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=dev'),
-('a0000000-0000-0000-0000-000000000004', 'Jenny Liu', 'jenny@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=jenny'),
-('a0000000-0000-0000-0000-000000000005', 'Alex Rivera', 'alex@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=alex'),
-('a0000000-0000-0000-0000-000000000006', 'Kim Nguyen', 'kim@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=kim'),
-('a0000000-0000-0000-0000-000000000007', 'Jordan Blake', 'jordan@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=jordan'),
-('a0000000-0000-0000-0000-000000000008', 'Priya Sharma', 'priya@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=priya'),
-('a0000000-0000-0000-0000-000000000009', 'Mika Virtanen', 'mika@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=mika'),
-('a0000000-0000-0000-0000-000000000010', 'Taylor Brooks', 'taylor@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=taylor')
+INSERT INTO users (id, name, email, image, is_bot) VALUES
+('a0000000-0000-0000-0000-000000000001', 'Marcus Chen', 'marcus@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=marcus', TRUE),
+('a0000000-0000-0000-0000-000000000002', 'Sarah Park', 'sarah@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=sarah', TRUE),
+('a0000000-0000-0000-0000-000000000003', 'Dev Patel', 'dev@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=dev', TRUE),
+('a0000000-0000-0000-0000-000000000004', 'Jenny Liu', 'jenny@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=jenny', TRUE),
+('a0000000-0000-0000-0000-000000000005', 'Alex Rivera', 'alex@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=alex', TRUE),
+('a0000000-0000-0000-0000-000000000006', 'Kim Nguyen', 'kim@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=kim', TRUE),
+('a0000000-0000-0000-0000-000000000007', 'Jordan Blake', 'jordan@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=jordan', TRUE),
+('a0000000-0000-0000-0000-000000000008', 'Priya Sharma', 'priya@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=priya', TRUE),
+('a0000000-0000-0000-0000-000000000009', 'Mika Virtanen', 'mika@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=mika', TRUE),
+('a0000000-0000-0000-0000-000000000010', 'Taylor Brooks', 'taylor@example.com', 'https://api.dicebear.com/9.x/avataaars/svg?seed=taylor', TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO ideas (name, pitch, target_customer, problem, revenue_model, category, stage, elo_score, wins, losses, user_id) VALUES

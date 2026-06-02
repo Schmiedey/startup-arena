@@ -12,6 +12,7 @@ export async function GET(request: Request) {
         id,
         name,
         image,
+        COALESCE(is_bot, false) AS is_bot,
         prediction_elo,
         prediction_wins,
         prediction_losses,
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
         prediction_losses: Number(row.prediction_losses),
         prediction_streak: Number(row.prediction_streak),
         best_prediction_streak: Number(row.best_prediction_streak),
+        is_bot: Boolean(row.is_bot),
         guesses: Number(row.guesses),
         accuracy: getPredictionAccuracy(Number(row.prediction_wins), Number(row.prediction_losses)),
       }))

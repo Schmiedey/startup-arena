@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { signinPathFor } from "@/lib/auth-redirect";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
@@ -8,7 +9,7 @@ export default auth((req) => {
   const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
 
   if (isProtected && !req.auth) {
-    return NextResponse.redirect(new URL("/signin", req.url));
+    return NextResponse.redirect(new URL(signinPathFor(req.nextUrl.href, req.url), req.url));
   }
 
   return NextResponse.next();

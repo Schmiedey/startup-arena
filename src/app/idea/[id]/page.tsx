@@ -48,6 +48,7 @@ export default function IdeaPage() {
     ? session.user.id === idea.user_id
     : false;
   const isAdmin = session?.user?.isAdmin === true;
+  const canCreateChallengeLink = isOwner && (session?.user?.plan === "launch" || session?.user?.plan === "pro");
 
   async function handleDelete() {
     if (!confirm("Delete this idea permanently? This cannot be undone.")) return;
@@ -200,20 +201,41 @@ export default function IdeaPage() {
           </div>
 
           <div className="grid gap-2 sm:grid-cols-3">
-            <Link
-              href={`/battle?challenge=${idea.id}`}
-              className="inline-flex items-center justify-center gap-2 bg-fire px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire-foreground transition-colors hover:bg-fire/90"
-            >
-              <Swords className="h-3.5 w-3.5" />
-              Challenge this idea
-            </Link>
-            <button
-              onClick={handleChallengeShare}
-              className="inline-flex items-center justify-center gap-2 border border-fire/30 px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire transition-colors hover:bg-fire/10"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              Share challenge
-            </button>
+            {canCreateChallengeLink ? (
+              <>
+                <Link
+                  href={`/battle?challenge=${idea.id}`}
+                  className="inline-flex items-center justify-center gap-2 bg-fire px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire-foreground transition-colors hover:bg-fire/90"
+                >
+                  <Swords className="h-3.5 w-3.5" />
+                  Challenge this idea
+                </Link>
+                <button
+                  onClick={handleChallengeShare}
+                  className="inline-flex items-center justify-center gap-2 border border-fire/30 px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire transition-colors hover:bg-fire/10"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  Share challenge
+                </button>
+              </>
+            ) : isOwner ? (
+              <Link
+                href="/pricing"
+                onClick={() => trackClientEvent("challenge_link_upgrade_clicked", { idea_id: idea.id })}
+                className="inline-flex items-center justify-center gap-2 border border-fire/30 px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire transition-colors hover:bg-fire/10 sm:col-span-2"
+              >
+                <Swords className="h-3.5 w-3.5" />
+                Upgrade for challenge links
+              </Link>
+            ) : (
+              <Link
+                href="/battle"
+                className="inline-flex items-center justify-center gap-2 bg-fire px-4 py-3 text-xs font-bold uppercase tracking-wider text-fire-foreground transition-colors hover:bg-fire/90 sm:col-span-2"
+              >
+                <Swords className="h-3.5 w-3.5" />
+                Vote on battles
+              </Link>
+            )}
             <a
               href="#roast"
               className="inline-flex items-center justify-center gap-2 border border-border/40 px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:border-fire/30 hover:text-fire"

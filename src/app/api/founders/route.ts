@@ -8,6 +8,7 @@ export async function GET() {
         u.id,
         u.name,
         u.image,
+        COALESCE(u.is_bot, false) AS is_bot,
         u.created_at,
         COALESCE(i_stats.ideas_count, 0) AS ideas_count,
         COALESCE(i_stats.total_wins, 0) AS total_wins,
@@ -37,7 +38,12 @@ export async function GET() {
         FROM votes
         GROUP BY user_id
       ) v_stats ON u.id = v_stats.user_id
-      WHERE i_stats.ideas_count IS NOT NULL OR v_stats.votes_cast IS NOT NULL
+      WHERE
+        (
+          COALESCE(u.is_bot, false) = true
+          OR (u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing'))
+        )
+        AND (i_stats.ideas_count IS NOT NULL OR v_stats.votes_cast IS NOT NULL)
       ORDER BY karma DESC NULLS LAST
       LIMIT 50
     `;

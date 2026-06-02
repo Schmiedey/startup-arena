@@ -48,7 +48,10 @@ async function fetchBattleData(options?: { category?: string | null; challenge?:
   if (options?.category) params.set("category", options.category);
   if (options?.challenge) params.set("challenge", options.challenge);
   const res = await fetch(`/api/battle${params.size ? `?${params}` : ""}`);
-  if (!res.ok) throw new Error("Failed to load battle");
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(typeof data.error === "string" ? data.error : "Failed to load battle");
+  }
 
   const battle = await res.json() as BattleData;
   const [loadedCommentsA, loadedCommentsB] = await Promise.all([
@@ -91,8 +94,8 @@ export default function BattlePage() {
       setBattle(data.battle);
       setCommentsA(data.commentsA);
       setCommentsB(data.commentsB);
-    } catch {
-      setError("Could not load battle. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load battle. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -108,9 +111,9 @@ export default function BattlePage() {
         setCommentsA(data.commentsA);
         setCommentsB(data.commentsB);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
-        setError("Could not load battle. Please try again.");
+        setError(err instanceof Error ? err.message : "Could not load battle. Please try again.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -311,17 +314,25 @@ export default function BattlePage() {
             >
               All
             </Link>
-            {CATEGORIES.map((cat) => (
-              <Link
-                key={cat}
-                href={`/battle?category=${encodeURIComponent(cat)}`}
-                className={`shrink-0 border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${
-                  category === cat ? "border-fire/40 bg-fire/10 text-fire" : "border-border/40 text-muted-foreground hover:border-fire/30 hover:text-fire"
-                }`}
-              >
-                {cat}
-              </Link>
-            ))}
+            {CATEGORIES.map((cat) => {
+              const hasPro = session?.user?.plan === "pro";
+              return (
+                <Link
+                  key={cat}
+                  href={hasPro ? `/battle?category=${encodeURIComponent(cat)}` : "/pricing"}
+                  onClick={() => {
+                    if (!hasPro) trackClientEvent("category_battle_upgrade_clicked", { category: cat });
+                  }}
+                  className={`shrink-0 border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                    category === cat ? "border-fire/40 bg-fire/10 text-fire" : "border-border/40 text-muted-foreground hover:border-fire/30 hover:text-fire"
+                  }`}
+                  title={hasPro ? `${cat} battles` : "Founder Pro unlocks category battle testing"}
+                >
+                  {cat}
+                  {!hasPro && <span className="ml-1 text-[9px] text-fire">PRO</span>}
+                </Link>
+              );
+            })}
           </div>
           <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent sm:hidden" />
         </div>

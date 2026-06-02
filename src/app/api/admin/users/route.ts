@@ -13,11 +13,11 @@ export async function GET(request: Request) {
   const offset = (page - 1) * limit;
 
   try {
-    let users, count;
+    let users, realCount, recordCount, botCount;
     if (search) {
       const searchPattern = `%${search}%`;
-      [users, count] = await Promise.all([
-        sql`SELECT u.id, u.name, u.email, u.image, u.is_admin, u.banned, u.created_at,
+      [users, realCount, recordCount, botCount] = await Promise.all([
+        sql`SELECT u.id, u.name, u.email, u.image, u.is_admin, u.banned, COALESCE(u.is_bot, false) AS is_bot, u.created_at,
             COUNT(DISTINCT i.id) as ideas_count,
             COALESCE(SUM(i.wins), 0) as total_wins,
             COALESCE(SUM(i.losses), 0) as total_losses,
@@ -28,11 +28,13 @@ export async function GET(request: Request) {
             GROUP BY u.id
             ORDER BY u.created_at DESC
             LIMIT ${limit} OFFSET ${offset}`,
+        sql`SELECT COUNT(*) as count FROM users WHERE COALESCE(is_bot, false) = false AND COALESCE(is_admin, false) = false AND (name ILIKE ${searchPattern} OR email ILIKE ${searchPattern})`,
         sql`SELECT COUNT(*) as count FROM users WHERE name ILIKE ${searchPattern} OR email ILIKE ${searchPattern}`,
+        sql`SELECT COUNT(*) as count FROM users WHERE COALESCE(is_bot, false) = true AND (name ILIKE ${searchPattern} OR email ILIKE ${searchPattern})`,
       ]);
     } else {
-      [users, count] = await Promise.all([
-        sql`SELECT u.id, u.name, u.email, u.image, u.is_admin, u.banned, u.created_at,
+      [users, realCount, recordCount, botCount] = await Promise.all([
+        sql`SELECT u.id, u.name, u.email, u.image, u.is_admin, u.banned, COALESCE(u.is_bot, false) AS is_bot, u.created_at,
             COUNT(DISTINCT i.id) as ideas_count,
             COALESCE(SUM(i.wins), 0) as total_wins,
             COALESCE(SUM(i.losses), 0) as total_losses,
@@ -42,15 +44,19 @@ export async function GET(request: Request) {
             GROUP BY u.id
             ORDER BY u.created_at DESC
             LIMIT ${limit} OFFSET ${offset}`,
+        sql`SELECT COUNT(*) as count FROM users WHERE COALESCE(is_bot, false) = false AND COALESCE(is_admin, false) = false`,
         sql`SELECT COUNT(*) as count FROM users`,
+        sql`SELECT COUNT(*) as count FROM users WHERE COALESCE(is_bot, false) = true`,
       ]);
     }
 
     return NextResponse.json({
       users: users.rows,
-      total: Number(count.rows[0].count),
+      total: Number(realCount.rows[0].count),
+      botTotal: Number(botCount.rows[0].count),
+      totalRecords: Number(recordCount.rows[0].count),
       page,
-      totalPages: Math.ceil(Number(count.rows[0].count) / limit),
+      totalPages: Math.ceil(Number(recordCount.rows[0].count) / limit),
     });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });

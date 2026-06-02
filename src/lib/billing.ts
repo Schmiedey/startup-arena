@@ -69,6 +69,14 @@ export function isActiveSubscription(status: string | null | undefined) {
   return status === "active" || status === "trialing";
 }
 
+export function hasLaunchAccess(plan: BillingPlan) {
+  return plan === "launch" || plan === "pro";
+}
+
+export function hasProAccess(plan: BillingPlan) {
+  return plan === "pro";
+}
+
 export function ideaLimitForPlan(plan: BillingPlan) {
   return PLAN_LIMITS[plan];
 }
@@ -87,4 +95,12 @@ export async function getBillingUserByEmail(email: string): Promise<BillingUser 
     ...user,
     plan: normalizePlan(user),
   };
+}
+
+export async function clearStripeCustomerId(userId: string, stripeCustomerId: string) {
+  await sql`
+    UPDATE users
+    SET stripe_customer_id = NULL
+    WHERE id = ${userId} AND stripe_customer_id = ${stripeCustomerId}
+  `;
 }
