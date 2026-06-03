@@ -348,153 +348,160 @@ export default function BattlePage() {
         </div>
       )}
 
-      {!challenge && (
-        <PaidMemberSpotlight
-          category={category}
-          limit={6}
-          title={category ? "Featured in this category" : "Featured paid members"}
-        />
-      )}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+        <div className="min-w-0">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="flex-1 animate-slide-in-left">
+              <BattleCard
+                idea={battle.idea_a}
+                onVote={handleVote}
+                voted={voted}
+                isWinner={winner === battle.idea_a.id}
+                isLoser={loser === battle.idea_a.id}
+              />
+            </div>
+            <div className="hidden sm:flex sm:items-center sm:pt-20">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-fire/30 bg-fire/5 animate-vs-pulse">
+                <span className="text-xl font-black text-fire">VS</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center sm:hidden">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-fire/30 bg-fire/5 animate-vs-pulse">
+                <span className="text-base font-black text-fire">VS</span>
+              </div>
+            </div>
+            <div className="flex-1 animate-slide-in-right">
+              <BattleCard
+                idea={battle.idea_b}
+                onVote={handleVote}
+                voted={voted}
+                isWinner={winner === battle.idea_b.id}
+                isLoser={loser === battle.idea_b.id}
+              />
+            </div>
+          </div>
 
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="flex-1 animate-slide-in-left">
-          <BattleCard
-            idea={battle.idea_a}
-            onVote={handleVote}
-            voted={voted}
-            isWinner={winner === battle.idea_a.id}
-            isLoser={loser === battle.idea_a.id}
-          />
+          {voting && (
+            <div className="text-center py-4">
+              <Loader2 className="mx-auto h-6 w-6 animate-spin text-fire" />
+              <p className="mt-2 text-sm text-muted-foreground">Recording your vote...</p>
+            </div>
+          )}
+
+          {voted && winnerIdea && loserIdea && result && (
+            <BattleResultCard
+              winner={winnerIdea}
+              loser={loserIdea}
+              battleId={battle.battle_id}
+              winnerDelta={result.winnerDelta}
+              loserDelta={result.loserDelta}
+              prediction={result.prediction}
+              shared={shared}
+              onShare={shareBattleResult}
+              onNext={loadBattle}
+              onReason={handleReasonSubmit}
+            />
+          )}
+
+          {voted && (
+            <div className="animate-slide-up mt-4 space-y-4">
+              <div className="flex items-center justify-center gap-3">
+                <Button
+                  onClick={loadBattle}
+                  variant="outline"
+                  size="default"
+                  className="gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Next Battle
+                </Button>
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="gap-2"
+                  onClick={() => setShowComments(true)}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Discuss
+                </Button>
+                {battle?.battle_id && (
+                  <a
+                    href={battlePath({ id: battle.battle_id, idea_a: battle.idea_a, idea_b: battle.idea_b })}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      await shareBattleResult();
+                    }}
+                    className="inline-flex items-center gap-2 border border-border/40 px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    {shared ? "Copied!" : "Share"}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {(showComments || voted) && battle && (
+            <div className="mt-8">
+              <div className="mb-6 text-center">
+                {!voted && (
+                  <Button
+                    onClick={() => setShowComments(false)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-muted-foreground hover:text-foreground hover:bg-panel border border-border/40"
+                  >
+                    Hide Comments
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid gap-8 sm:grid-cols-2">
+                <div>
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-fire">
+                    {battle.idea_a.name}
+                  </h3>
+                  <CommentSection ideaId={battle.idea_a.id} comments={commentsA} />
+                </div>
+                <div>
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-fire">
+                    {battle.idea_b.name}
+                  </h3>
+                  <CommentSection ideaId={battle.idea_b.id} comments={commentsB} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!voted && (
+            <div className="mt-6 text-center">
+              <Button
+                onClick={() => {
+                  trackClientEvent("battle_skipped", { battle_id: battle?.battle_id });
+                  loadBattle();
+                }}
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Skip this matchup
+              </Button>
+            </div>
+          )}
         </div>
-        <div className="hidden sm:flex sm:items-center sm:pt-20">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-fire/30 bg-fire/5 animate-vs-pulse">
-            <span className="text-xl font-black text-fire">VS</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-center sm:hidden">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-fire/30 bg-fire/5 animate-vs-pulse">
-            <span className="text-base font-black text-fire">VS</span>
-          </div>
-        </div>
-        <div className="flex-1 animate-slide-in-right">
-          <BattleCard
-            idea={battle.idea_b}
-            onVote={handleVote}
-            voted={voted}
-            isWinner={winner === battle.idea_b.id}
-            isLoser={loser === battle.idea_b.id}
-          />
+
+        <div className="order-last xl:order-none">
+          {!challenge && (
+            <PaidMemberSpotlight
+              category={category}
+              limit={3}
+              title={category ? "Featured here" : "Paid members"}
+              placement="rail"
+            />
+          )}
         </div>
       </div>
-
-      {voting && (
-        <div className="text-center py-4">
-          <Loader2 className="mx-auto h-6 w-6 animate-spin text-fire" />
-          <p className="mt-2 text-sm text-muted-foreground">Recording your vote...</p>
-        </div>
-      )}
-
-      {voted && winnerIdea && loserIdea && result && (
-        <BattleResultCard
-          winner={winnerIdea}
-          loser={loserIdea}
-          battleId={battle.battle_id}
-          winnerDelta={result.winnerDelta}
-          loserDelta={result.loserDelta}
-          prediction={result.prediction}
-          shared={shared}
-          onShare={shareBattleResult}
-          onNext={loadBattle}
-          onReason={handleReasonSubmit}
-        />
-      )}
-
-      {voted && (
-        <div className="animate-slide-up mt-4 space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <Button
-              onClick={loadBattle}
-              variant="outline"
-              size="default"
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Next Battle
-            </Button>
-            <Button
-              variant="outline"
-              size="default"
-              className="gap-2"
-              onClick={() => setShowComments(true)}
-            >
-              <MessageSquare className="h-4 w-4" />
-              Discuss
-            </Button>
-            {battle?.battle_id && (
-              <a
-                href={battlePath({ id: battle.battle_id, idea_a: battle.idea_a, idea_b: battle.idea_b })}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  await shareBattleResult();
-                }}
-                className="inline-flex items-center gap-2 border border-border/40 px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
-              >
-                <Share2 className="h-4 w-4" />
-                {shared ? "Copied!" : "Share"}
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-
-      {(showComments || voted) && battle && (
-        <div className="mt-8">
-          <div className="mb-6 text-center">
-            {!voted && (
-              <Button
-                onClick={() => setShowComments(false)}
-                variant="outline"
-                size="sm"
-className="gap-1.5 text-muted-foreground hover:text-foreground hover:bg-panel border border-border/40"
-              >
-                Hide Comments
-              </Button>
-            )}
-          </div>
-
-          <div className="grid gap-8 sm:grid-cols-2">
-            <div>
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-fire">
-                {battle.idea_a.name}
-              </h3>
-              <CommentSection ideaId={battle.idea_a.id} comments={commentsA} />
-            </div>
-            <div>
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-fire">
-                {battle.idea_b.name}
-              </h3>
-              <CommentSection ideaId={battle.idea_b.id} comments={commentsB} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {!voted && (
-        <div className="mt-6 text-center">
-          <Button
-            onClick={() => {
-              trackClientEvent("battle_skipped", { battle_id: battle?.battle_id });
-              loadBattle();
-            }}
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-muted-foreground"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Skip this matchup
-          </Button>
-        </div>
-      )}
       </div>
     </div>
   );

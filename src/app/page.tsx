@@ -1,11 +1,46 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Swords, TrendingUp, Flame } from "lucide-react";
+import { ArrowRight, Flame, MessageSquare, Rocket, Swords, TrendingUp, Trophy } from "lucide-react";
 import { LikelyrBackground } from "@/components/likelyr-background";
 import { TrendingIdeas } from "@/components/trending-ideas";
 import { HomeStats } from "@/components/home-stats";
 import { ScrollReveal } from "@/components/scroll-reveal";
+
+const PATHWAY_OPTIONS = [
+  {
+    label: "Option one",
+    title: "Battle for fun",
+    desc: "No idea needed. Jump into head-to-head matchups, vote on what feels stronger, and see if your instincts match the crowd.",
+    href: "/battle",
+    cta: "Start battling",
+    icon: Swords,
+    accent: "from-blue-500/20 via-fire/10 to-transparent",
+    ring: "ring-blue-400/25",
+    steps: [
+      "Pick the idea more likely to make money",
+      "Leave a quick reason when you have one",
+      "Build a predictor score as the crowd votes",
+    ],
+    chips: ["Fast battles", "Predictor Elo", "Crowd reasons"],
+  },
+  {
+    label: "Option two",
+    title: "Submit and compete",
+    desc: "Put your SaaS idea in the arena. It gets matched against other ideas, earns Elo, and shows where the crowd believes or hesitates.",
+    href: "/submit",
+    cta: "Submit an idea",
+    icon: Rocket,
+    accent: "from-fire/25 via-ember/10 to-transparent",
+    ring: "ring-fire/30",
+    steps: [
+      "Add the pitch, buyer, and revenue model",
+      "Compete in battles against other ideas",
+      "Use rankings and reasons to find the signal",
+    ],
+    chips: ["Idea Elo", "Challenge links", "Founder profile"],
+  },
+];
 
 const ELO_TIERS = [
   { tier: "Dominant", elo: "1400+", color: "text-emerald-400", barColor: "bg-emerald-400", bg: "bg-emerald-400/5", pct: 100 },
@@ -59,140 +94,113 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 3D Battle preview ── */}
+      {/* ── Optional pathway demo ── */}
       <section className="relative border-b border-border/30 bg-card/20 overflow-hidden">
         <LikelyrBackground className="opacity-20" />
-        <div className="relative z-10 mx-auto max-w-5xl px-6 py-16 sm:py-24">
+        <div className="absolute inset-x-0 top-0 z-[1] h-40 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 z-[1] h-40 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+        <div className="relative z-10 mx-auto max-w-6xl px-6 py-16 sm:py-24">
           <ScrollReveal animation="reveal-up">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-fire flex items-center gap-2">
               <Swords className="h-3.5 w-3.5" />
-              This is what happens
+              Choose your route
             </p>
-            <h2 className="mb-12 text-3xl font-black sm:text-4xl font-[family-name:var(--font-chakra)]">
-              two ideas compete. one survives.
+            <h2 className="max-w-3xl text-3xl font-black sm:text-4xl font-[family-name:var(--font-chakra)]">
+              battle for fun, or submit an idea and compete.
             </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              This is the product in motion. Pick a lane when you are ready, or keep scrolling and learn the rest.
+            </p>
           </ScrollReveal>
 
-          <div className="perspective-card">
-            <div className="grid gap-0 sm:grid-cols-2 relative">
-              <ScrollReveal animation="reveal-left" delay={100}>
-                <div className="glass-card glass-card-hover p-6 sm:rounded-l-xl relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative z-10">
-                    <div className="mb-4 flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/15 text-xs font-black text-blue-400 ring-1 ring-blue-500/30">A</span>
-                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">B2B SaaS · MVP</span>
-                    </div>
-                    <h3 className="text-xl font-black font-[family-name:var(--font-chakra)]">LeadSniper AI</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      AI tool that finds local businesses with bad websites and sends personalized cold emails.
-                    </p>
-                    <div className="mt-5 flex gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Revenue</p>
-                        <p className="text-sm font-semibold">$49/mo</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Target</p>
-                        <p className="text-sm font-semibold">Small biz owners</p>
-                      </div>
-                    </div>
-                    <div className="mt-5 grid grid-cols-3 gap-3 border-t border-border/30 pt-4">
-                      <div>
-                        <p className="text-2xl font-black tabular-nums text-fire font-[family-name:var(--font-chakra)]">1284</p>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Elo</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-black tabular-nums text-emerald-400 font-[family-name:var(--font-chakra)]">82%</p>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Win rate</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-black tabular-nums text-amber-400 font-[family-name:var(--font-chakra)]">78%</p>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Survival</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </ScrollReveal>
-
-              <ScrollReveal animation="reveal-right" delay={100}>
-                <div className="glass-card glass-card-hover p-6 sm:rounded-r-xl relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-bl from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative z-10">
-                    <div className="mb-4 flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/15 text-xs font-black text-violet-400 ring-1 ring-violet-500/30">B</span>
-                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Education · Idea</span>
-                    </div>
-                    <h3 className="text-xl font-black font-[family-name:var(--font-chakra)]">TutorCredits</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      App where students trade homework help using credits earned by helping others.
-                    </p>
-                    <div className="mt-5 flex gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Revenue</p>
-                        <p className="text-sm font-semibold">10% commission</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Target</p>
-                        <p className="text-sm font-semibold">Students</p>
-                      </div>
-                    </div>
-                    <div className="mt-5 grid grid-cols-3 gap-3 border-t border-border/30 pt-4">
-                      <div>
-                        <p className="text-2xl font-black tabular-nums font-[family-name:var(--font-chakra)]">1087</p>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Elo</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-black tabular-nums font-[family-name:var(--font-chakra)]">59%</p>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Win rate</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-black tabular-nums font-[family-name:var(--font-chakra)]">49%</p>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Survival</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </ScrollReveal>
-
-              <div className="hidden sm:absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-fire/40 bg-background/90 backdrop-blur-sm shadow-[0_0_30px_rgba(220,60,30,0.3)] animate-vs-pulse">
-                  <span className="text-base font-black text-fire font-[family-name:var(--font-chakra)]">VS</span>
-                </div>
-              </div>
-              <div className="flex sm:hidden items-center justify-center my-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-fire/40 bg-background/90 backdrop-blur-sm shadow-[0_0_20px_rgba(220,60,30,0.3)] animate-vs-pulse">
-                  <span className="text-sm font-black text-fire font-[family-name:var(--font-chakra)]">VS</span>
-                </div>
-              </div>
+          <div className="relative mt-12">
+            <div className="pointer-events-none absolute inset-x-4 top-10 bottom-10 hidden md:block [perspective:900px]">
+              <div className="mx-auto h-full max-w-3xl origin-bottom rotate-x-[62deg] rounded-[100%] border border-fire/15 bg-gradient-to-b from-fire/10 via-fire/5 to-transparent shadow-[0_0_80px_rgba(220,60,30,0.12)]" />
+              <div className="absolute left-1/2 top-8 h-[calc(100%-4rem)] w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-fire/50 to-transparent" />
             </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {PATHWAY_OPTIONS.map((path, i) => {
+                const Icon = path.icon;
+                const animation = i === 0 ? "reveal-left" : "reveal-right";
+                return (
+                  <ScrollReveal key={path.title} animation={animation} delay={100 + i * 80}>
+                    <div className="perspective-card h-full">
+                      <div className="glass-card glass-card-hover group relative h-full overflow-hidden p-6 sm:p-8">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${path.accent} opacity-70 transition-opacity duration-500 group-hover:opacity-100`} />
+                        <div className="relative z-10">
+                          <div className="mb-6 flex items-center justify-between gap-4">
+                            <div className={`flex h-12 w-12 items-center justify-center rounded-full bg-background/70 ring-1 ${path.ring} shadow-[0_0_30px_rgba(220,60,30,0.12)]`}>
+                              <Icon className="h-5 w-5 text-fire" />
+                            </div>
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">{path.label}</span>
+                          </div>
+
+                          <h3 className="text-2xl font-black font-[family-name:var(--font-chakra)]">{path.title}</h3>
+                          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{path.desc}</p>
+
+                          <div className="mt-8 space-y-4">
+                            {path.steps.map((step, stepIndex) => (
+                              <div key={step} className="flex gap-3">
+                                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-fire/25 bg-fire/10 text-xs font-black text-fire font-[family-name:var(--font-chakra)]">
+                                  {stepIndex + 1}
+                                </span>
+                                <p className="text-sm leading-relaxed text-foreground/85">{step}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="mt-7 flex flex-wrap gap-2">
+                            {path.chips.map((chip) => (
+                              <span key={chip} className="rounded-full border border-border/40 bg-background/35 px-3 py-1 text-xs font-semibold text-muted-foreground">
+                                {chip}
+                              </span>
+                            ))}
+                          </div>
+
+                          <Link
+                            href={path.href}
+                            className="group mt-8 inline-flex items-center gap-2.5 rounded-none bg-fire px-5 py-3 text-sm font-bold uppercase tracking-wider text-fire-foreground shadow-[0_0_30px_rgba(220,60,30,0.25)] transition-all hover:shadow-[0_0_45px_rgba(220,60,30,0.38)] hover:scale-[1.03] active:scale-[0.98]"
+                          >
+                            {path.cta}
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </ScrollReveal>
+                );
+              })}
+            </div>
+
+            <ScrollReveal animation="reveal-up" delay={260}>
+              <div className="mx-auto mt-10 max-w-3xl border border-fire/20 bg-fire/5 px-5 py-4 backdrop-blur-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fire/15 text-fire ring-1 ring-fire/25">
+                      <MessageSquare className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold font-[family-name:var(--font-chakra)]">Every vote creates signal.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Voters get ranked for judgment. Founders get ranked by market reaction.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-5 text-xs uppercase tracking-wider text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Trophy className="h-3.5 w-3.5 text-fire" />
+                      rankings
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <TrendingUp className="h-3.5 w-3.5 text-fire" />
+                      Elo
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </ScrollReveal>
           </div>
-
-          <ScrollReveal animation="reveal-up" delay={200}>
-            <div className="mt-px border-x border-b border-fire/30 bg-fire/5 px-6 py-5 sm:rounded-b-xl shimmer">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fire/20 text-xs font-black text-fire">A</span>
-                <div>
-                  <p className="font-bold text-fire font-[family-name:var(--font-chakra)]">LeadSniper AI wins.</p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Clear buyer. Direct ROI. Proven willingness to pay. The education model has adoption risk and monetization hurdles.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal animation="reveal-scale" delay={300}>
-            <div className="mt-8 text-center">
-              <Link
-                href="/battle"
-                className="group inline-flex items-center gap-2.5 rounded-none bg-fire px-6 py-3 text-sm font-bold uppercase tracking-wider text-fire-foreground shadow-[0_0_30px_rgba(220,60,30,0.25)] transition-all hover:shadow-[0_0_50px_rgba(220,60,30,0.4)] hover:scale-[1.03]"
-              >
-                Try a real battle
-                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
-          </ScrollReveal>
         </div>
       </section>
 
