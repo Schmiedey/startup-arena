@@ -58,6 +58,24 @@ export default function DashboardPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    const checkoutSuccess = searchParams.get("checkout") === "success";
+    const email = session?.user?.email;
+    const plan = session?.user?.plan ?? "free";
+    if (!email || plan === "pro") return;
+
+    const syncKey = `likelyr-billing-sync:${email}`;
+    const lastSync = Number(window.localStorage.getItem(syncKey) ?? 0);
+    const shouldSync = checkoutSuccess || Date.now() - lastSync > 10 * 60 * 1000;
+    if (!shouldSync) return;
+
+    window.localStorage.setItem(syncKey, String(Date.now()));
+
+    void fetch("/api/billing/sync", { method: "POST" }).finally(() => {
+      void updateSession();
+    });
+  }, [searchParams, session?.user?.email, session?.user?.plan, updateSession]);
+
+  useEffect(() => {
     if (searchParams.get("checkout") !== "success") return;
 
     const timeouts = [0, 1500, 4000, 8000].map((delay) =>
