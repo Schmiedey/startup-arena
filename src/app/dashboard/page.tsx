@@ -58,6 +58,20 @@ export default function DashboardPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return;
+
+    const timeouts = [0, 1500, 4000, 8000].map((delay) =>
+      window.setTimeout(() => {
+        void updateSession();
+      }, delay)
+    );
+
+    return () => {
+      timeouts.forEach(window.clearTimeout);
+    };
+  }, [searchParams, updateSession]);
+
+  useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) return;
 
@@ -166,7 +180,7 @@ export default function DashboardPage() {
       {searchParams.get("checkout") === "success" && (
         <div className="mb-6 flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300 animate-slide-up">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          <span>Your payment went through. If the plan label has not updated yet, refresh in a few seconds while Stripe finishes the webhook.</span>
+          <span>Your payment went through. Your plan will update here as soon as Stripe confirms it.</span>
         </div>
       )}
 

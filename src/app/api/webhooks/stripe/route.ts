@@ -4,8 +4,8 @@ import Stripe from "stripe";
 import { getStripe, getStripeWebhookSecret } from "@/lib/stripe";
 import { trackEvent } from "@/lib/analytics";
 
-async function applySubscriptionEntitlement(subscription: Stripe.Subscription) {
-  const userId = subscription.metadata.userId;
+async function applySubscriptionEntitlement(subscription: Stripe.Subscription, fallbackUserId?: string | null) {
+  const userId = subscription.metadata.userId ?? fallbackUserId;
   const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
   if (!userId) {
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
 
       if (entitlement === "pro" && typeof checkoutSession.subscription === "string") {
         const subscription = await getStripe().subscriptions.retrieve(checkoutSession.subscription);
-        await applySubscriptionEntitlement(subscription);
+        await applySubscriptionEntitlement(subscription, userId);
       }
       await trackEvent({
         name: "checkout_completed",
