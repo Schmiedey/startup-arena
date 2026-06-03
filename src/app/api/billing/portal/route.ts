@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const origin = new URL(request.url).origin;
     const portalSession = await getStripe().billingPortal.sessions.create({
       customer: user.stripe_customer_id,
-      return_url: `${origin}/pricing`,
+      return_url: `${origin}/dashboard`,
     });
 
     await trackEvent({

@@ -43,6 +43,8 @@ export default function DashboardPage() {
   const [nameValue, setNameValue] = useState("");
   const [uploading, setUploading] = useState(false);
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingMsg, setBillingMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -191,6 +193,23 @@ export default function DashboardPage() {
     }
   }
 
+  async function openBillingPortal() {
+    setBillingLoading(true);
+    setBillingMsg(null);
+    trackClientEvent("billing_portal_clicked", { source: "dashboard" });
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || typeof data.url !== "string") {
+        throw new Error(typeof data.error === "string" ? data.error : "Could not open billing portal.");
+      }
+      window.location.assign(data.url);
+    } catch (err) {
+      setBillingMsg(err instanceof Error ? err.message : "Could not open billing portal.");
+      setBillingLoading(false);
+    }
+  }
+
   return (
     <div className="relative mx-auto max-w-4xl px-6 py-10">
       <LikelyrBackground className="opacity-[0.06]" />
@@ -262,27 +281,41 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mb-8 flex flex-col gap-3 border border-border/30 bg-card/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-fire/30 bg-fire/10 text-fire">
-            <CreditCard className="h-4 w-4" />
+      <div className="mb-8 border border-border/30 bg-card/20 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-fire/30 bg-fire/10 text-fire">
+              <CreditCard className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">plan</p>
+              <p className="text-sm font-semibold">
+                {plan.label}
+                <span className="mx-2 text-muted-foreground">/</span>
+                <span className="text-muted-foreground">{plan.limit}</span>
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">plan</p>
-            <p className="text-sm font-semibold">
-              {plan.label}
-              <span className="mx-2 text-muted-foreground">/</span>
-              <span className="text-muted-foreground">{plan.limit}</span>
-            </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={openBillingPortal}
+              disabled={billingLoading}
+              className="inline-flex items-center justify-center gap-1.5 border border-border/50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:border-fire/40 hover:text-fire disabled:opacity-60"
+            >
+              {billingLoading ? "Opening..." : "Manage billing"}
+              <ExternalLink className="h-3 w-3" />
+            </button>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center gap-1.5 border border-border/50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:border-fire/40 hover:text-fire"
+            >
+              {plan.cta}
+              <ExternalLink className="h-3 w-3" />
+            </Link>
           </div>
         </div>
-        <Link
-          href="/pricing"
-          className="inline-flex items-center justify-center gap-1.5 border border-border/50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:border-fire/40 hover:text-fire"
-        >
-          {plan.cta}
-          <ExternalLink className="h-3 w-3" />
-        </Link>
+        {billingMsg && <p className="mt-3 text-xs text-red-400">{billingMsg}</p>}
       </div>
 
       <div className="mb-8 border border-border/30 bg-card/20 p-4">
