@@ -21,11 +21,12 @@ export function ScrollReveal({
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  const [prefersReduced, setPrefersReduced] = useState(false);
+  const [prefersReduced, setPrefersReduced] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
   useEffect(() => {
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefersReduced(mql.matches);
     const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
     mql.addEventListener("change", handler);
     return () => mql.removeEventListener("change", handler);
