@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import { sql } from "@vercel/postgres";
 import { trackEvent } from "@/lib/analytics";
@@ -66,7 +65,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: gmailEmailConfigured ? likelyrAuthAdapter : undefined,
   session: { strategy: "jwt" },
   trustHost: true,
-  providers: [GitHub, Google, credentialsProvider, ...(gmailEmailConfigured ? [emailProvider] : [])],
+  providers: [Google({ allowDangerousEmailAccountLinking: true }), credentialsProvider, ...(gmailEmailConfigured ? [emailProvider] : [])],
   pages: {
     signIn: "/signin",
   },

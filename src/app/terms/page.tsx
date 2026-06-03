@@ -22,7 +22,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-bold text-foreground">3. User Accounts</h2>
-          <p>You may sign in using GitHub or Google. You are responsible for keeping your account secure. You must not create multiple accounts to manipulate votes.</p>
+          <p>You may sign in using Google. You are responsible for keeping your account secure. You must not create multiple accounts to manipulate votes.</p>
         </section>
 
         <section>

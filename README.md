@@ -5,7 +5,7 @@ Likelyr is a Next.js 16 App Router app where people submit ideas, vote on head-t
 ## Stack
 
 - Next.js 16, React 19, TypeScript
-- Auth.js / NextAuth with GitHub and Google providers
+- Auth.js / NextAuth with Google provider
 - Vercel Postgres / Neon via `@vercel/postgres`
 - Tailwind CSS 4 and shadcn-style UI primitives
 - Vitest for focused unit tests

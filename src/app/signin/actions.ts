@@ -4,7 +4,7 @@ import { signIn } from "@/auth";
 import { safeAuthRedirect } from "@/lib/auth-redirect";
 import { redirect } from "next/navigation";
 
-const oauthProviders = new Set(["github", "google"]);
+const oauthProviders = new Set(["google"]);
 
 export async function startOAuthSignIn(formData: FormData) {
   const provider = formData.get("provider");

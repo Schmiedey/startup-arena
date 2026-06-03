@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <div className="mt-8 space-y-8 text-sm leading-relaxed text-muted-foreground">
         <section>
           <h2 className="text-lg font-bold text-foreground">1. Information We Collect</h2>
-          <p><strong>Account information:</strong> When you sign in with GitHub or Google, we receive your name, email, and profile picture from the OAuth provider.</p>
+          <p><strong>Account information:</strong> When you sign in with Google, we receive your name, email, and profile picture from the OAuth provider.</p>
           <p className="mt-2"><strong>Content you create:</strong> Ideas, comments, vote reasons, and battle votes you submit.</p>
           <p className="mt-2"><strong>Usage data:</strong> We collect standard product analytics including page views, clicks, referrers, campaign parameters, performance metrics, and error events.</p>
           <p className="mt-2"><strong>Payment data:</strong> Payments are processed by Stripe. We store Stripe customer and subscription identifiers, but not full card numbers.</p>
