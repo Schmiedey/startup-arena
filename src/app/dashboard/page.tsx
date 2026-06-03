@@ -63,7 +63,7 @@ export default function DashboardPage() {
     const plan = session?.user?.plan ?? "free";
     if (!email || plan === "pro") return;
 
-    const syncKey = `likelyr-billing-sync:${email}`;
+    const syncKey = `likelyr-billing-sync:v2:${email}`;
     const lastSync = Number(window.localStorage.getItem(syncKey) ?? 0);
     const shouldSync = checkoutSuccess || Date.now() - lastSync > 10 * 60 * 1000;
     if (!shouldSync) return;

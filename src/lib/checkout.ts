@@ -10,6 +10,7 @@ export function checkoutSessionParams(plan: CheckoutPlan, user: CheckoutUser, or
     mode: checkoutPlan.mode,
     customer: user.stripe_customer_id ?? undefined,
     customer_email: user.stripe_customer_id ? undefined : user.email,
+    customer_creation: checkoutPlan.mode === "payment" && !user.stripe_customer_id ? "always" : undefined,
     client_reference_id: user.id,
     allow_promotion_codes: true,
     line_items: [

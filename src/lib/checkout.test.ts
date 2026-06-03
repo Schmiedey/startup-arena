@@ -18,7 +18,17 @@ describe("checkout helpers", () => {
 
     expect(params.customer).toBe("cus_123");
     expect(params.customer_email).toBeUndefined();
+    expect(params.customer_creation).toBeUndefined();
     expect(params.success_url).toBe("https://likelyr.com/dashboard?checkout=success");
+  });
+
+  it("creates a Stripe customer for one-time launch pass payments", () => {
+    const params = checkoutSessionParams("launch-pass", { ...user, stripe_customer_id: null }, "https://likelyr.com");
+
+    expect(params.mode).toBe("payment");
+    expect(params.customer).toBeUndefined();
+    expect(params.customer_email).toBe("founder@example.com");
+    expect(params.customer_creation).toBe("always");
   });
 
   it("can build retry params without a stale Stripe customer", () => {

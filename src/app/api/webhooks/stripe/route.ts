@@ -75,13 +75,13 @@ export async function POST(request: Request) {
       const entitlement = checkoutSession.metadata?.entitlement;
       const customerId = typeof checkoutSession.customer === "string" ? checkoutSession.customer : checkoutSession.customer?.id ?? null;
 
-      if (!userId || !customerId) break;
+      if (!userId) break;
 
       if (entitlement === "launch") {
         await sql`
           UPDATE users SET
             plan = CASE WHEN plan = 'pro' THEN 'pro' ELSE 'launch' END,
-            stripe_customer_id = ${customerId},
+            stripe_customer_id = COALESCE(${customerId}, stripe_customer_id),
             launch_pass_purchased_at = COALESCE(launch_pass_purchased_at, NOW())
           WHERE id = ${userId}
         `;
