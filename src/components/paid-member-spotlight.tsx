@@ -19,12 +19,12 @@ interface FeaturedMember {
   profile_cta_url: string | null;
   profile_featured_category: string | null;
   profile_weekly_digest_opt_in: boolean | null;
-  idea_id: string;
-  idea_name: string;
-  idea_pitch: string;
-  idea_category: string;
-  idea_stage: string;
-  idea_elo_score: number | string;
+  idea_id: string | null;
+  idea_name: string | null;
+  idea_pitch: string | null;
+  idea_category: string | null;
+  idea_stage: string | null;
+  idea_elo_score: number | string | null;
   ideas_count: number | string;
   best_elo: number | string;
   total_wins: number | string;
@@ -88,8 +88,6 @@ export function PaidMemberSpotlight({
     );
   }
 
-  if (members.length === 0) return null;
-
   return (
     <section className="mb-6 border border-border/30 bg-card/15 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -112,16 +110,31 @@ export function PaidMemberSpotlight({
         </Link>
       </div>
 
+      {members.length === 0 ? (
+        <div className="border border-dashed border-border/40 bg-background/25 px-4 py-5 text-center">
+          <p className="text-sm font-semibold">No paid members featured yet.</p>
+          <p className="mx-auto mt-1 max-w-xl text-xs text-muted-foreground">
+            Paid founders will appear here with profile links, CTAs, and category visibility once they upgrade.
+          </p>
+          <Link
+            href="/pricing"
+            className="mt-3 inline-flex items-center justify-center border border-fire/35 px-3 py-2 text-xs font-bold uppercase tracking-wider text-fire transition-colors hover:bg-fire/10"
+          >
+            Become featured
+          </Link>
+        </div>
+      ) : (
       <div className={compact ? "grid gap-2 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
         {members.map((member, index) => {
           const name = member.name || "Anonymous founder";
           const profileHref = founderPath({ id: member.id, name: member.name });
-          const headline = member.profile_headline || member.idea_pitch;
+          const headline = member.profile_headline || member.idea_pitch || "Featured paid member";
           const recordTotal = Number(member.total_wins) + Number(member.total_losses);
           const winRate = recordTotal > 0 ? Math.round((Number(member.total_wins) / recordTotal) * 100) : 0;
+          const displayCategory = member.idea_category || member.profile_featured_category;
 
           return (
-            <div key={`${member.id}-${member.idea_id}`} className="border border-border/25 bg-background/35 p-3">
+            <div key={`${member.id}-${member.idea_id ?? "profile"}`} className="border border-border/25 bg-background/35 p-3">
               <div className="flex items-start gap-3">
                 <Avatar src={member.image} name={name} size={36} />
                 <div className="min-w-0 flex-1">
@@ -150,11 +163,19 @@ export function PaidMemberSpotlight({
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className={`${CATEGORY_COLORS[member.idea_category] ?? ""} px-1.5 py-0.5 text-[10px] font-semibold`}>
-                  {member.idea_category}
-                </span>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{member.idea_elo_score} Elo</span>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{winRate}% win</span>
+                {displayCategory && (
+                  <span className={`${CATEGORY_COLORS[displayCategory] ?? ""} px-1.5 py-0.5 text-[10px] font-semibold`}>
+                    {displayCategory}
+                  </span>
+                )}
+                {member.idea_elo_score ? (
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{member.idea_elo_score} Elo</span>
+                ) : (
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Profile featured</span>
+                )}
+                {recordTotal > 0 && (
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{winRate}% win</span>
+                )}
               </div>
 
               <div className="mt-3 flex gap-2">
@@ -195,6 +216,7 @@ export function PaidMemberSpotlight({
           );
         })}
       </div>
+      )}
     </section>
   );
 }

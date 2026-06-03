@@ -59,7 +59,7 @@ export async function GET(request: Request) {
             stats.total_losses,
             last_seen.last_impression_at
           FROM paid_users pu
-          JOIN LATERAL (
+          LEFT JOIN LATERAL (
             SELECT i.id, i.name, i.pitch, i.category, i.stage, i.elo_score
             FROM ideas i
             WHERE i.user_id = pu.id
@@ -87,6 +87,7 @@ export async function GET(request: Request) {
               AND ae.metadata->>'category' = ${category}
           ) last_seen ON TRUE
           WHERE pu.effective_plan <> 'free'
+            AND (featured.id IS NOT NULL OR pu.profile_featured_category = ${category})
           ORDER BY
             last_seen.last_impression_at ASC NULLS FIRST,
             CASE WHEN pu.effective_plan = 'pro' THEN 0 ELSE 1 END,
@@ -129,7 +130,7 @@ export async function GET(request: Request) {
             stats.total_losses,
             last_seen.last_impression_at
           FROM paid_users pu
-          JOIN LATERAL (
+          LEFT JOIN LATERAL (
             SELECT i.id, i.name, i.pitch, i.category, i.stage, i.elo_score
             FROM ideas i
             WHERE i.user_id = pu.id
