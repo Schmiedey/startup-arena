@@ -9,6 +9,23 @@ const IDEA_LIMITS = {
   revenue_model: 100,
 };
 
+const PREMIUM_PROFILE_LIMITS = {
+  profile_headline: 90,
+  profile_bio: 600,
+  profile_cta_label: 40,
+};
+
+const FOUNDER_UPDATE_LIMITS = {
+  title: 100,
+  body: 700,
+};
+
+const LEAD_LIMITS = {
+  email: 254,
+  message: 600,
+  source: 80,
+};
+
 export interface IdeaInput {
   name: string;
   pitch: string;
@@ -20,6 +37,34 @@ export interface IdeaInput {
 }
 
 type IdeaUpdate = Partial<IdeaInput> & { id: string };
+
+export interface PremiumProfileInput {
+  profile_headline?: string | null;
+  profile_bio?: string | null;
+  profile_website_url?: string | null;
+  profile_demo_url?: string | null;
+  profile_linkedin_url?: string | null;
+  profile_x_url?: string | null;
+  profile_cta_label?: string | null;
+  profile_cta_url?: string | null;
+  profile_show_contact?: boolean;
+  profile_weekly_digest_opt_in?: boolean;
+  profile_featured_category?: Category | null;
+}
+
+export interface FounderUpdateInput {
+  title: string;
+  body: string;
+  idea_id?: string | null;
+}
+
+export interface LeadInput {
+  founder_user_id: string;
+  idea_id?: string | null;
+  email?: string | null;
+  message?: string | null;
+  source?: string | null;
+}
 
 type ValidationResult<T> =
   | { ok: true; data: T }
@@ -56,6 +101,83 @@ function cleanText(
   }
 
   return { ok: true, data: trimmed };
+}
+
+function cleanLimitedText<K extends string>(
+  payload: Record<string, unknown>,
+  key: K,
+  limit: number
+): ValidationResult<string | null | undefined> {
+  const value = payload[key];
+
+  if (value === undefined) return { ok: true, data: undefined };
+  if (value === null) return { ok: true, data: null };
+  if (typeof value !== "string") return { ok: false, error: `${key} must be text` };
+
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: true, data: null };
+  if (trimmed.length > limit) {
+    return { ok: false, error: `${key} must be ${limit} characters or fewer` };
+  }
+
+  return { ok: true, data: trimmed };
+}
+
+function cleanRequiredLimitedText<K extends string>(
+  payload: Record<string, unknown>,
+  key: K,
+  limit: number
+): ValidationResult<string> {
+  const value = payload[key];
+
+  if (typeof value !== "string") return { ok: false, error: `${key} is required` };
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: false, error: `${key} cannot be empty` };
+  if (trimmed.length > limit) {
+    return { ok: false, error: `${key} must be ${limit} characters or fewer` };
+  }
+
+  return { ok: true, data: trimmed };
+}
+
+function cleanOptionalUrl(payload: Record<string, unknown>, key: string): ValidationResult<string | null | undefined> {
+  const value = payload[key];
+
+  if (value === undefined) return { ok: true, data: undefined };
+  if (value === null) return { ok: true, data: null };
+  if (typeof value !== "string") return { ok: false, error: `${key} must be a URL` };
+
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: true, data: null };
+  if (trimmed.length > 300) return { ok: false, error: `${key} must be 300 characters or fewer` };
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return { ok: false, error: `${key} must use http or https` };
+    }
+  } catch {
+    return { ok: false, error: `${key} must be a valid URL` };
+  }
+
+  return { ok: true, data: trimmed };
+}
+
+function cleanOptionalBoolean(payload: Record<string, unknown>, key: string): ValidationResult<boolean | undefined> {
+  const value = payload[key];
+  if (value === undefined) return { ok: true, data: undefined };
+  if (typeof value !== "boolean") return { ok: false, error: `${key} must be true or false` };
+  return { ok: true, data: value };
+}
+
+function cleanOptionalCategoryValue(payload: Record<string, unknown>, key: string): ValidationResult<Category | null | undefined> {
+  const value = payload[key];
+  if (value === undefined) return { ok: true, data: undefined };
+  if (value === null || value === "") return { ok: true, data: null };
+  if (typeof value !== "string" || !(CATEGORIES as readonly string[]).includes(value)) {
+    return { ok: false, error: "Invalid featured category" };
+  }
+  return { ok: true, data: value as Category };
 }
 
 function cleanCategory(
@@ -174,4 +296,96 @@ export function validateIdeaUpdatePayload(payload: unknown): ValidationResult<Id
   if (spamError) return { ok: false, error: spamError };
 
   return { ok: true, data };
+}
+
+export function validatePremiumProfilePayload(payload: unknown): ValidationResult<PremiumProfileInput> {
+  if (!isRecord(payload)) return { ok: false, error: "Invalid request body" };
+
+  const data: PremiumProfileInput = {};
+
+  for (const [key, limit] of Object.entries(PREMIUM_PROFILE_LIMITS) as Array<[keyof typeof PREMIUM_PROFILE_LIMITS, number]>) {
+    const result = cleanLimitedText(payload, key, limit);
+    if (!result.ok) return result;
+    if (result.data !== undefined) data[key] = result.data;
+  }
+
+  for (const key of ["profile_website_url", "profile_demo_url", "profile_linkedin_url", "profile_x_url", "profile_cta_url"] as const) {
+    const result = cleanOptionalUrl(payload, key);
+    if (!result.ok) return result;
+    if (result.data !== undefined) data[key] = result.data;
+  }
+
+  for (const key of ["profile_show_contact", "profile_weekly_digest_opt_in"] as const) {
+    const result = cleanOptionalBoolean(payload, key);
+    if (!result.ok) return result;
+    if (result.data !== undefined) data[key] = result.data;
+  }
+
+  const featuredCategory = cleanOptionalCategoryValue(payload, "profile_featured_category");
+  if (!featuredCategory.ok) return featuredCategory;
+  if (featuredCategory.data !== undefined) data.profile_featured_category = featuredCategory.data;
+
+  const spamError = combinedPublicTextError([
+    data.profile_headline ?? "",
+    data.profile_bio ?? "",
+    data.profile_cta_label ?? "",
+  ]);
+  if (spamError) return { ok: false, error: spamError };
+
+  return { ok: true, data };
+}
+
+export function validateFounderUpdatePayload(payload: unknown): ValidationResult<FounderUpdateInput> {
+  if (!isRecord(payload)) return { ok: false, error: "Invalid request body" };
+
+  const title = cleanRequiredLimitedText(payload, "title", FOUNDER_UPDATE_LIMITS.title);
+  if (!title.ok) return title;
+  const body = cleanRequiredLimitedText(payload, "body", FOUNDER_UPDATE_LIMITS.body);
+  if (!body.ok) return body;
+
+  const ideaValue = payload.idea_id;
+  const ideaId = typeof ideaValue === "string" && ideaValue.trim() ? ideaValue.trim() : null;
+  const spamError = combinedPublicTextError([title.data, body.data]);
+  if (spamError) return { ok: false, error: spamError };
+
+  return {
+    ok: true,
+    data: {
+      title: title.data,
+      body: body.data,
+      idea_id: ideaId,
+    },
+  };
+}
+
+export function validateLeadPayload(payload: unknown): ValidationResult<LeadInput> {
+  if (!isRecord(payload)) return { ok: false, error: "Invalid request body" };
+  if (typeof payload.founder_user_id !== "string" || !payload.founder_user_id.trim()) {
+    return { ok: false, error: "Founder is required" };
+  }
+
+  const email = cleanLimitedText(payload, "email", LEAD_LIMITS.email);
+  if (!email.ok) return email;
+  const message = cleanLimitedText(payload, "message", LEAD_LIMITS.message);
+  if (!message.ok) return message;
+  const source = cleanLimitedText(payload, "source", LEAD_LIMITS.source);
+  if (!source.ok) return source;
+
+  if (email.data && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.data)) {
+    return { ok: false, error: "Use a valid email address" };
+  }
+
+  const spamError = combinedPublicTextError([message.data ?? "", source.data ?? ""]);
+  if (spamError) return { ok: false, error: spamError };
+
+  return {
+    ok: true,
+    data: {
+      founder_user_id: payload.founder_user_id.trim(),
+      idea_id: typeof payload.idea_id === "string" && payload.idea_id.trim() ? payload.idea_id.trim() : null,
+      email: email.data ?? null,
+      message: message.data ?? null,
+      source: source.data ?? null,
+    },
+  };
 }

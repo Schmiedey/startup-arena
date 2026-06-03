@@ -2,20 +2,44 @@ import { sql } from "@vercel/postgres";
 import { getWinRate, getSurvivalRating, formatElo } from "@/lib/elo";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Crown, TrendingUp, Zap, Trophy } from "lucide-react";
+import { Crown, ExternalLink, Megaphone, Newspaper, Sparkles, TrendingUp, Zap, Trophy } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { JsonLd } from "@/components/json-ld";
 import { absoluteUrl, extractEntityId, founderPath, ideaPath } from "@/lib/seo";
+import { FounderProfileTracker } from "@/components/founder-profile-tracker";
+import { FounderLeadForm } from "@/components/founder-lead-form";
 
 export default async function FounderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
   const id = extractEntityId(rawId);
 
-  let user, ideas, stats, karmaData;
+  let user, ideas, stats, karmaData, updates;
 
   try {
     const userResult = await sql`
-      SELECT id, name, image, COALESCE(is_bot, false) AS is_bot, created_at FROM users WHERE id = ${id}
+      SELECT
+        id,
+        name,
+        image,
+        COALESCE(is_bot, false) AS is_bot,
+        created_at,
+        CASE
+          WHEN plan = 'pro' AND subscription_status IN ('active', 'trialing') THEN 'pro'
+          WHEN launch_pass_purchased_at IS NOT NULL OR plan = 'launch' THEN 'launch'
+          ELSE 'free'
+        END AS user_plan,
+        profile_headline,
+        profile_bio,
+        profile_website_url,
+        profile_demo_url,
+        profile_linkedin_url,
+        profile_x_url,
+        profile_cta_label,
+        profile_cta_url,
+        COALESCE(profile_show_contact, true) AS profile_show_contact,
+        COALESCE(profile_weekly_digest_opt_in, true) AS profile_weekly_digest_opt_in,
+        profile_featured_category
+      FROM users WHERE id = ${id}
     `;
     user = userResult.rows[0];
     if (!user) notFound();
@@ -39,6 +63,16 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
       SELECT COUNT(*) as votes_cast FROM votes WHERE user_id = ${id}
     `;
     karmaData = karmaResult.rows[0];
+
+    const updatesResult = await sql`
+      SELECT fu.id, fu.idea_id, i.name AS idea_name, fu.title, fu.body, fu.created_at
+      FROM founder_updates fu
+      LEFT JOIN ideas i ON i.id = fu.idea_id
+      WHERE fu.user_id = ${id}
+      ORDER BY fu.created_at DESC
+      LIMIT 8
+    `;
+    updates = updatesResult.rows;
   } catch {
     notFound();
   }
@@ -54,6 +88,13 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
   const karma = totalWins * 5 + votesCast * 1 + ideasCount * 10;
   const displayName = user.name ?? "Anonymous founder";
   const profilePath = founderPath({ id, name: user.name });
+  const isPaid = user.user_plan === "launch" || user.user_plan === "pro";
+  const profileLinks = [
+    { label: "Website", href: user.profile_website_url },
+    { label: "Demo", href: user.profile_demo_url },
+    { label: "LinkedIn", href: user.profile_linkedin_url },
+    { label: "X", href: user.profile_x_url },
+  ].filter((link) => typeof link.href === "string" && link.href);
 
   const KARMA_TIERS = [
     { min: 200, label: "Veteran", color: "text-emerald-400", bg: "bg-emerald-400/10" },
@@ -76,6 +117,8 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
       name: displayName,
       image: user.image ?? undefined,
       url: absoluteUrl(profilePath),
+      description: user.profile_headline ?? undefined,
+      sameAs: profileLinks.map((link) => link.href),
       knowsAbout: ["startup ideas", "startup validation", "business ideas"],
       interactionStatistic: [
         {
@@ -95,6 +138,7 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <JsonLd data={jsonLd} />
+      <FounderProfileTracker founderUserId={id} />
       <Link
         href="/founders"
         className="mb-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
@@ -107,6 +151,12 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black">{displayName}</h1>
+            {isPaid && (
+              <span className="inline-flex items-center gap-1 border border-fire/30 bg-fire/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fire">
+                <Sparkles className="h-3 w-3" />
+                {user.user_plan === "pro" ? "Founder Pro" : "Launch Pass"}
+              </span>
+            )}
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tier.color} ${tier.bg}`}>
               {tier.label}
             </span>
@@ -116,6 +166,48 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
           </p>
         </div>
       </div>
+
+      {isPaid && (
+        <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_280px]">
+          <div className="border border-border/30 bg-card/20 p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-fire" />
+              <h2 className="text-sm font-bold uppercase tracking-widest">Profile</h2>
+            </div>
+            {user.profile_headline ? (
+              <p className="text-lg font-semibold leading-snug">{user.profile_headline}</p>
+            ) : (
+              <p className="text-lg font-semibold leading-snug">Building in public on Likelyr.</p>
+            )}
+            {user.profile_bio && (
+              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{user.profile_bio}</p>
+            )}
+            {profileLinks.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {profileLinks.map((link) => (
+                  <a
+                    key={link.label}
+                    href={String(link.href)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 border border-border/40 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:border-fire/30 hover:text-fire"
+                  >
+                    {link.label}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+          <FounderLeadForm
+            founderUserId={id}
+            founderName={displayName}
+            ctaLabel={user.profile_cta_label}
+            ctaUrl={user.profile_cta_url}
+            showContact={user.profile_show_contact}
+          />
+        </div>
+      )}
 
       {/* Karma + stats grid */}
       <div className="grid grid-cols-2 gap-px border border-border/30 sm:grid-cols-5">
@@ -144,6 +236,31 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
           </p>
         </div>
       </div>
+
+      {isPaid && updates.length > 0 && (
+        <div className="mt-6 border border-border/30 bg-card/20 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Newspaper className="h-4 w-4 text-fire" />
+            <h2 className="text-sm font-bold uppercase tracking-widest">Founder updates</h2>
+          </div>
+          <div className="space-y-3">
+            {updates.map((update: Record<string, string | null>) => (
+              <div key={String(update.id)} className="border border-border/20 bg-background/30 p-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                  <h3 className="font-semibold">{String(update.title)}</h3>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {new Date(String(update.created_at)).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+                {update.idea_name && (
+                  <p className="mt-1 text-[10px] uppercase tracking-wider text-fire">{String(update.idea_name)}</p>
+                )}
+                <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{String(update.body)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Karma breakdown */}
       <div className="mt-6 border border-border/30 bg-card/20 p-4">

@@ -13,6 +13,7 @@ import { LikelyrBackground } from "@/components/likelyr-background";
 import { Avatar } from "@/components/avatar";
 import { trackClientEvent } from "@/lib/analytics-client";
 import { ideaPath } from "@/lib/seo";
+import { PremiumDashboard } from "@/components/premium-dashboard";
 
 const planCopy = {
   free: {
@@ -364,6 +365,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <PremiumDashboard currentPlan={currentPlan} />
 
       {/* Stats */}
       <div className="mb-2 text-lg font-bold">your ideas</div>

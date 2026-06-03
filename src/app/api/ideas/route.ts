@@ -88,7 +88,17 @@ export async function GET(request: Request) {
   try {
     if (id) {
       const result = await sql`
-        SELECT i.*, u.name as user_name, u.image as user_image
+        SELECT i.*, u.name as user_name, u.image as user_image,
+          CASE
+            WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+            WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+            ELSE 'free'
+          END as user_plan,
+          u.profile_headline,
+          u.profile_cta_label,
+          u.profile_cta_url,
+          COALESCE(u.profile_show_contact, true) as profile_show_contact,
+          u.profile_featured_category
         FROM ideas i LEFT JOIN users u ON i.user_id = u.id
         WHERE i.id = ${id}
       `;
@@ -97,7 +107,17 @@ export async function GET(request: Request) {
 
     if (userId) {
       const result = await sql`
-        SELECT i.*, u.name as user_name, u.image as user_image
+        SELECT i.*, u.name as user_name, u.image as user_image,
+          CASE
+            WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+            WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+            ELSE 'free'
+          END as user_plan,
+          u.profile_headline,
+          u.profile_cta_label,
+          u.profile_cta_url,
+          COALESCE(u.profile_show_contact, true) as profile_show_contact,
+          u.profile_featured_category
         FROM ideas i LEFT JOIN users u ON i.user_id = u.id
         WHERE i.user_id = ${userId}
         ORDER BY i.elo_score DESC
@@ -109,6 +129,16 @@ export async function GET(request: Request) {
       const result = category
         ? await sql`
             SELECT i.*, u.name as user_name, u.image as user_image,
+              CASE
+                WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+                WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+                ELSE 'free'
+              END as user_plan,
+              u.profile_headline,
+              u.profile_cta_label,
+              u.profile_cta_url,
+              COALESCE(u.profile_show_contact, true) as profile_show_contact,
+              u.profile_featured_category,
               COUNT(DISTINCT c.id)::int as comment_count,
               COUNT(DISTINCT v.id) FILTER (WHERE v.reason IS NOT NULL)::int as reason_count,
               (
@@ -122,12 +152,22 @@ export async function GET(request: Request) {
             LEFT JOIN comments c ON c.idea_id = i.id
             LEFT JOIN votes v ON v.winner_id = i.id
             WHERE i.category = ${category}
-            GROUP BY i.id, u.name, u.image
+            GROUP BY i.id, u.name, u.image, u.plan, u.subscription_status, u.launch_pass_purchased_at, u.profile_headline, u.profile_cta_label, u.profile_cta_url, u.profile_show_contact, u.profile_featured_category
             ORDER BY controversy_score DESC, (i.wins + i.losses) DESC, i.elo_score DESC
             LIMIT ${limit} OFFSET ${offset}
           `
         : await sql`
             SELECT i.*, u.name as user_name, u.image as user_image,
+              CASE
+                WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+                WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+                ELSE 'free'
+              END as user_plan,
+              u.profile_headline,
+              u.profile_cta_label,
+              u.profile_cta_url,
+              COALESCE(u.profile_show_contact, true) as profile_show_contact,
+              u.profile_featured_category,
               COUNT(DISTINCT c.id)::int as comment_count,
               COUNT(DISTINCT v.id) FILTER (WHERE v.reason IS NOT NULL)::int as reason_count,
               (
@@ -140,7 +180,7 @@ export async function GET(request: Request) {
             LEFT JOIN users u ON i.user_id = u.id
             LEFT JOIN comments c ON c.idea_id = i.id
             LEFT JOIN votes v ON v.winner_id = i.id
-            GROUP BY i.id, u.name, u.image
+            GROUP BY i.id, u.name, u.image, u.plan, u.subscription_status, u.launch_pass_purchased_at, u.profile_headline, u.profile_cta_label, u.profile_cta_url, u.profile_show_contact, u.profile_featured_category
             ORDER BY controversy_score DESC, (i.wins + i.losses) DESC, i.elo_score DESC
             LIMIT ${limit} OFFSET ${offset}
           `;
@@ -149,14 +189,34 @@ export async function GET(request: Request) {
 
     const result = category
       ? await sql`
-          SELECT i.*, u.name as user_name, u.image as user_image
+          SELECT i.*, u.name as user_name, u.image as user_image,
+            CASE
+              WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+              WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+              ELSE 'free'
+            END as user_plan,
+            u.profile_headline,
+            u.profile_cta_label,
+            u.profile_cta_url,
+            COALESCE(u.profile_show_contact, true) as profile_show_contact,
+            u.profile_featured_category
           FROM ideas i LEFT JOIN users u ON i.user_id = u.id
           WHERE i.category = ${category}
           ORDER BY i.elo_score DESC
           LIMIT ${limit} OFFSET ${offset}
         `
       : await sql`
-          SELECT i.*, u.name as user_name, u.image as user_image
+          SELECT i.*, u.name as user_name, u.image as user_image,
+            CASE
+              WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+              WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+              ELSE 'free'
+            END as user_plan,
+            u.profile_headline,
+            u.profile_cta_label,
+            u.profile_cta_url,
+            COALESCE(u.profile_show_contact, true) as profile_show_contact,
+            u.profile_featured_category
           FROM ideas i LEFT JOIN users u ON i.user_id = u.id
           ORDER BY i.elo_score DESC
           LIMIT ${limit} OFFSET ${offset}

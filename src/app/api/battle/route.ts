@@ -6,6 +6,25 @@ import { trackEvent } from "@/lib/analytics";
 import { hasProAccess, normalizePlan } from "@/lib/billing";
 import { rateLimit, rateLimitIdentity, rateLimitResponse } from "@/lib/rate-limit";
 
+async function getIdeaWithFounder(id: string) {
+  const result = await sql`
+    SELECT i.*, u.name as user_name, u.image as user_image,
+      CASE
+        WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+        WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+        ELSE 'free'
+      END as user_plan,
+      u.profile_headline,
+      u.profile_cta_label,
+      u.profile_cta_url,
+      COALESCE(u.profile_show_contact, true) as profile_show_contact,
+      u.profile_featured_category
+    FROM ideas i LEFT JOIN users u ON i.user_id = u.id
+    WHERE i.id = ${id}
+  `;
+  return result.rows[0];
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const battleId = searchParams.get("id");
@@ -23,11 +42,13 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Battle not found" }, { status: 404 });
       }
       const battle = battleResult.rows[0];
-      const ideaAResult = await sql`SELECT i.*, u.name as user_name, u.image as user_image FROM ideas i LEFT JOIN users u ON i.user_id = u.id WHERE i.id = ${battle.idea_a_id}`;
-      const ideaBResult = await sql`SELECT i.*, u.name as user_name, u.image as user_image FROM ideas i LEFT JOIN users u ON i.user_id = u.id WHERE i.id = ${battle.idea_b_id}`;
+      const [ideaA, ideaB] = await Promise.all([
+        getIdeaWithFounder(String(battle.idea_a_id)),
+        getIdeaWithFounder(String(battle.idea_b_id)),
+      ]);
       return NextResponse.json({
-        idea_a: ideaAResult.rows[0],
-        idea_b: ideaBResult.rows[0],
+        idea_a: ideaA,
+        idea_b: ideaB,
         battle_id: battle.battle_id,
       });
     } catch (error) {
@@ -75,7 +96,17 @@ export async function GET(request: Request) {
   try {
     if (challengeIdeaId) {
       const ideaResult = await sql`
-        SELECT i.*, u.name as user_name, u.image as user_image
+        SELECT i.*, u.name as user_name, u.image as user_image,
+          CASE
+            WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+            WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+            ELSE 'free'
+          END as user_plan,
+          u.profile_headline,
+          u.profile_cta_label,
+          u.profile_cta_url,
+          COALESCE(u.profile_show_contact, true) as profile_show_contact,
+          u.profile_featured_category
         FROM ideas i LEFT JOIN users u ON i.user_id = u.id
         WHERE i.id = ${challengeIdeaId}
       `;
@@ -86,7 +117,17 @@ export async function GET(request: Request) {
 
       const opponentResult = user
         ? await sql`
-            SELECT i.*, u.name as user_name, u.image as user_image
+            SELECT i.*, u.name as user_name, u.image as user_image,
+              CASE
+                WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+                WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+                ELSE 'free'
+              END as user_plan,
+              u.profile_headline,
+              u.profile_cta_label,
+              u.profile_cta_url,
+              COALESCE(u.profile_show_contact, true) as profile_show_contact,
+              u.profile_featured_category
             FROM ideas i LEFT JOIN users u ON i.user_id = u.id
             WHERE i.id <> ${challengeIdeaId}
               AND i.user_id IS DISTINCT FROM ${user.id}
@@ -97,7 +138,17 @@ export async function GET(request: Request) {
             LIMIT 1
           `
         : await sql`
-            SELECT i.*, u.name as user_name, u.image as user_image
+            SELECT i.*, u.name as user_name, u.image as user_image,
+              CASE
+                WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+                WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+                ELSE 'free'
+              END as user_plan,
+              u.profile_headline,
+              u.profile_cta_label,
+              u.profile_cta_url,
+              COALESCE(u.profile_show_contact, true) as profile_show_contact,
+              u.profile_featured_category
             FROM ideas i LEFT JOIN users u ON i.user_id = u.id
             WHERE i.id <> ${challengeIdeaId}
             ORDER BY
@@ -171,12 +222,14 @@ export async function GET(request: Request) {
 
       if (existingBattle.rows.length > 0) {
         const battle = existingBattle.rows[0];
-        const ideaAResult = await sql`SELECT i.*, u.name as user_name, u.image as user_image FROM ideas i LEFT JOIN users u ON i.user_id = u.id WHERE i.id = ${battle.idea_a_id}`;
-        const ideaBResult = await sql`SELECT i.*, u.name as user_name, u.image as user_image FROM ideas i LEFT JOIN users u ON i.user_id = u.id WHERE i.id = ${battle.idea_b_id}`;
+        const [ideaA, ideaB] = await Promise.all([
+          getIdeaWithFounder(String(battle.idea_a_id)),
+          getIdeaWithFounder(String(battle.idea_b_id)),
+        ]);
 
         return NextResponse.json({
-          idea_a: ideaAResult.rows[0],
-          idea_b: ideaBResult.rows[0],
+          idea_a: ideaA,
+          idea_b: ideaB,
           battle_id: battle.battle_id,
         });
       }
@@ -185,15 +238,37 @@ export async function GET(request: Request) {
     // No unvoted battle found, or anonymous visitor. Create a fresh matchup.
     const ideasResult = user
       ? await sql`
-          SELECT * FROM ideas
-          WHERE user_id IS DISTINCT FROM ${user.id}
-            AND (${category}::text IS NULL OR category = ${category})
-          ORDER BY elo_score DESC
+          SELECT i.*, u.name as user_name, u.image as user_image,
+            CASE
+              WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+              WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+              ELSE 'free'
+            END as user_plan,
+            u.profile_headline,
+            u.profile_cta_label,
+            u.profile_cta_url,
+            COALESCE(u.profile_show_contact, true) as profile_show_contact,
+            u.profile_featured_category
+          FROM ideas i LEFT JOIN users u ON i.user_id = u.id
+          WHERE i.user_id IS DISTINCT FROM ${user.id}
+            AND (${category}::text IS NULL OR i.category = ${category})
+          ORDER BY i.elo_score DESC
         `
       : await sql`
-          SELECT * FROM ideas
-          WHERE (${category}::text IS NULL OR category = ${category})
-          ORDER BY elo_score DESC
+          SELECT i.*, u.name as user_name, u.image as user_image,
+            CASE
+              WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+              WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+              ELSE 'free'
+            END as user_plan,
+            u.profile_headline,
+            u.profile_cta_label,
+            u.profile_cta_url,
+            COALESCE(u.profile_show_contact, true) as profile_show_contact,
+            u.profile_featured_category
+          FROM ideas i LEFT JOIN users u ON i.user_id = u.id
+          WHERE (${category}::text IS NULL OR i.category = ${category})
+          ORDER BY i.elo_score DESC
         `;
     const ideas = ideasResult.rows;
 

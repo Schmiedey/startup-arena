@@ -167,6 +167,12 @@ export async function POST(request: Request) {
           best_prediction_streak = ${bestPredictionStreak}
         WHERE id = ${user.id}
       `;
+      await client.sql`
+        INSERT INTO idea_score_history (idea_id, battle_id, elo_before, elo_after, result)
+        VALUES
+          (${winner_id}, ${battle_id}, ${winner.elo_score}, ${newWinnerRating}, 'win'),
+          (${loserId}, ${battle_id}, ${loser.elo_score}, ${newLoserRating}, 'loss')
+      `;
 
       return {
         winner: { ...winner, elo_score: newWinnerRating, wins: winner.wins + 1 },

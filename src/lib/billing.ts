@@ -22,14 +22,14 @@ export const CHECKOUT_PLANS: Record<
 > = {
   "launch-pass": {
     name: "Likelyr Launch Pass",
-    description: "Submit up to 5 ideas with challenge links and share-ready cards.",
+    description: "Submit up to 5 ideas with paid-member placement, profile CTAs, and challenge links.",
     amount: 1900,
     mode: "payment",
     entitlement: "launch",
   },
   "founder-pro-monthly": {
     name: "Likelyr Founder Pro",
-    description: "Unlimited idea submissions, category testing, and founder profile visibility.",
+    description: "Unlimited ideas, category testing, analytics, updates, and weekly digest placement.",
     amount: 1200,
     mode: "subscription",
     interval: "month",
@@ -37,7 +37,7 @@ export const CHECKOUT_PLANS: Record<
   },
   "founder-pro-yearly": {
     name: "Likelyr Founder Pro Annual",
-    description: "Founder Pro billed annually.",
+    description: "Founder Pro with analytics, updates, and paid-member visibility billed annually.",
     amount: 9900,
     mode: "subscription",
     interval: "year",

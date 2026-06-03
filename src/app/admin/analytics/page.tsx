@@ -198,6 +198,15 @@ const eventLabels: Record<string, string> = {
   challenge_link_upgrade_clicked: "Challenge upgrade",
   category_battle_upgrade_clicked: "Category upgrade",
   battle_created: "Battles created",
+  paid_member_spotlight_impression: "Paid spotlight views",
+  paid_member_spotlight_clicked: "Paid spotlight clicks",
+  premium_battle_card_viewed: "Premium battle cards",
+  premium_battle_card_cta_clicked: "Premium battle CTA",
+  founder_profile_viewed: "Founder profile views",
+  profile_cta_clicked: "Profile CTA clicks",
+  founder_lead_submitted: "Founder leads",
+  founder_update_posted: "Founder updates",
+  premium_profile_updated: "Premium profile updates",
 };
 
 const funnelLabels: Record<string, string> = {

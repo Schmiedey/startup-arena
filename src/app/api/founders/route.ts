@@ -9,6 +9,12 @@ export async function GET() {
         u.name,
         u.image,
         COALESCE(u.is_bot, false) AS is_bot,
+        CASE
+          WHEN u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing') THEN 'pro'
+          WHEN u.launch_pass_purchased_at IS NOT NULL OR u.plan = 'launch' THEN 'launch'
+          ELSE 'free'
+        END AS plan,
+        u.profile_headline,
         u.created_at,
         COALESCE(i_stats.ideas_count, 0) AS ideas_count,
         COALESCE(i_stats.total_wins, 0) AS total_wins,
@@ -41,6 +47,8 @@ export async function GET() {
       WHERE
         (
           COALESCE(u.is_bot, false) = true
+          OR u.launch_pass_purchased_at IS NOT NULL
+          OR u.plan = 'launch'
           OR (u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing'))
         )
         AND (i_stats.ideas_count IS NOT NULL OR v_stats.votes_cast IS NOT NULL)

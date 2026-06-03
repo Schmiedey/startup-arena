@@ -14,6 +14,7 @@ import { LikelyrBackground } from "@/components/likelyr-background";
 import { BattleResultCard } from "@/components/battle-result-card";
 import { trackClientEvent } from "@/lib/analytics-client";
 import { battlePath } from "@/lib/seo";
+import { PaidMemberSpotlight } from "@/components/paid-member-spotlight";
 
 interface BattleData {
   idea_a: Idea;
@@ -345,6 +346,14 @@ export default function BattlePage() {
         <div className="mb-4 rounded-none border border-fire/30 bg-fire/5 px-4 py-2 text-center text-sm text-fire">
           {error}
         </div>
+      )}
+
+      {!challenge && (
+        <PaidMemberSpotlight
+          category={category}
+          limit={6}
+          title={category ? "Featured in this category" : "Featured paid members"}
+        />
       )}
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start">

@@ -43,6 +43,12 @@ export interface Idea {
   created_at: string;
   user_name?: string | null;
   user_image?: string | null;
+  user_plan?: "free" | "launch" | "pro" | null;
+  profile_headline?: string | null;
+  profile_cta_label?: string | null;
+  profile_cta_url?: string | null;
+  profile_show_contact?: boolean | null;
+  profile_featured_category?: Category | null;
   comment_count?: number;
   reason_count?: number;
   controversy_score?: number;

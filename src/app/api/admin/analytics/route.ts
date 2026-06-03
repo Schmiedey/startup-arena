@@ -259,7 +259,16 @@ export async function GET(request: Request) {
             'challenge_share_clicked',
             'challenge_link_upgrade_clicked',
             'category_battle_upgrade_clicked',
-            'battle_created'
+            'battle_created',
+            'paid_member_spotlight_impression',
+            'paid_member_spotlight_clicked',
+            'premium_battle_card_viewed',
+            'premium_battle_card_cta_clicked',
+            'founder_profile_viewed',
+            'profile_cta_clicked',
+            'founder_lead_submitted',
+            'founder_update_posted',
+            'premium_profile_updated'
           )
         GROUP BY name, COALESCE(metadata->>'plan', metadata->>'category', metadata->>'method', 'all')
         ORDER BY count DESC, name ASC

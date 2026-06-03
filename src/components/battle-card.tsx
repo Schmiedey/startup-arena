@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Idea, STAGE_COLORS, CATEGORY_COLORS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSurvivalRating } from "@/lib/elo";
-import { Trophy, Zap, TrendingUp } from "lucide-react";
+import { Crown, ExternalLink, Trophy, Zap, TrendingUp } from "lucide-react";
+import { Avatar } from "@/components/avatar";
+import { founderPath } from "@/lib/seo";
+import { trackClientEvent } from "@/lib/analytics-client";
 
 interface BattleCardProps {
   idea: Idea;
@@ -25,6 +29,17 @@ export function BattleCard({
 }: BattleCardProps) {
   const survivalRating = getSurvivalRating(idea.elo_score);
   const [pressing, setPressing] = useState(false);
+  const isPaidIdea = idea.user_plan === "launch" || idea.user_plan === "pro";
+
+  useEffect(() => {
+    if (!voted || !isPaidIdea || !idea.user_id) return;
+    trackClientEvent("premium_battle_card_viewed", {
+      idea_id: idea.id,
+      member_user_id: idea.user_id,
+      profile_user_id: idea.user_id,
+      plan: idea.user_plan,
+    });
+  }, [idea.id, idea.user_id, idea.user_plan, isPaidIdea, voted]);
 
   return (
     <Card
@@ -97,6 +112,53 @@ export function BattleCard({
           <div className="rounded-lg border border-border/30 bg-background/60 p-3 text-center">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ratings hidden</p>
             <p className="mt-1 text-xs text-muted-foreground">Pick first. See score after.</p>
+          </div>
+        )}
+
+        {voted && isPaidIdea && idea.user_id && (
+          <div className="animate-slide-up border border-fire/20 bg-fire/5 p-3">
+            <div className="flex items-start gap-3">
+              <Avatar src={idea.user_image} name={idea.user_name} size={34} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-bold">{idea.user_name || "Founder"}</span>
+                  <span className="inline-flex items-center gap-1 border border-fire/30 bg-background/40 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fire">
+                    <Crown className="h-2.5 w-2.5" />
+                    {idea.user_plan === "pro" ? "Pro" : "Launch"}
+                  </span>
+                </div>
+                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                  {idea.profile_headline || "Featured paid member"}
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Link
+                href={founderPath({ id: idea.user_id, name: idea.user_name })}
+                className="inline-flex flex-1 items-center justify-center border border-border/40 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:border-fire/30 hover:text-fire"
+              >
+                Profile
+              </Link>
+              {idea.profile_cta_url && (
+                <a
+                  href={idea.profile_cta_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    trackClientEvent("premium_battle_card_cta_clicked", {
+                      idea_id: idea.id,
+                      member_user_id: idea.user_id,
+                      profile_user_id: idea.user_id,
+                      plan: idea.user_plan,
+                    });
+                  }}
+                  className="inline-flex items-center justify-center gap-1 border border-fire/35 bg-fire/10 px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-fire transition-colors hover:bg-fire/15"
+                >
+                  {idea.profile_cta_label || "Visit"}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
           </div>
         )}
 

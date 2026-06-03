@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Crown, Flame, ArrowLeft } from "lucide-react";
+import { Loader2, Crown, Flame, ArrowLeft, Sparkles } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { founderPath } from "@/lib/seo";
+import { PaidMemberSpotlight } from "@/components/paid-member-spotlight";
 
 interface Founder {
   id: string;
   name: string | null;
   image: string | null;
   is_bot?: boolean;
+  plan?: "free" | "launch" | "pro";
+  profile_headline?: string | null;
   created_at: string;
   ideas_count: string;
   total_wins: string;
@@ -100,6 +103,8 @@ export default function FoundersPage() {
         </div>
       </div>
 
+      <PaidMemberSpotlight title="Paid member spotlight" compact />
+
       {founders.length === 0 ? (
         <div className="py-20 text-center">
           <Flame className="mx-auto h-10 w-10 text-muted-foreground/20" />
@@ -137,12 +142,18 @@ export default function FoundersPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold truncate">{f.name || "Anonymous"}</span>
+                      {(f.plan === "launch" || f.plan === "pro") && (
+                        <span className="inline-flex items-center gap-1 border border-fire/30 bg-fire/5 px-1.5 py-0 text-[10px] font-bold uppercase tracking-wider text-fire">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          {f.plan === "pro" ? "Pro" : "Launch"}
+                        </span>
+                      )}
                       <span className={`rounded-full px-1.5 py-0 text-[10px] font-bold uppercase tracking-wider ${tier.color} ${tier.bg}`}>
                         {tier.label}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {Number(f.ideas_count)} idea{Number(f.ideas_count) !== 1 ? "s" : ""} · {timeAgo(f.created_at)}
+                      {f.profile_headline || `${Number(f.ideas_count)} idea${Number(f.ideas_count) !== 1 ? "s" : ""} · ${timeAgo(f.created_at)}`}
                     </p>
                   </div>
 
