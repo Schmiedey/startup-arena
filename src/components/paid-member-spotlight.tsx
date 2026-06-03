@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Crown, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, ChevronLeft, ChevronRight, ExternalLink, Loader2, Sparkles, TrendingUp, Swords } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { CATEGORY_COLORS } from "@/lib/types";
 import { founderPath } from "@/lib/seo";
@@ -36,18 +36,176 @@ interface PaidMemberSpotlightProps {
   limit?: number;
   title?: string;
   compact?: boolean;
-  placement?: "section" | "rail";
+  placement?: "section" | "bottom";
+  variant?: "grid" | "carousel";
+}
+
+function formatNumber(value: number | string | null | undefined) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return "0";
+  return numberValue.toLocaleString();
+}
+
+function getWinRate(member: FeaturedMember) {
+  const wins = Number(member.total_wins);
+  const losses = Number(member.total_losses);
+  const total = wins + losses;
+  if (!Number.isFinite(total) || total <= 0) return null;
+  return Math.round((wins / total) * 100);
+}
+
+function MemberCard({
+  member,
+  category,
+  position,
+  mode = "grid",
+}: {
+  member: FeaturedMember;
+  category?: string | null;
+  position: number;
+  mode?: "carousel" | "grid";
+}) {
+  const name = member.name || "Anonymous founder";
+  const profileHref = founderPath({ id: member.id, name: member.name });
+  const displayCategory = member.idea_category || member.profile_featured_category;
+  const headline = member.profile_headline || member.idea_pitch || "Building something great";
+  const winRate = getWinRate(member);
+  const isCarousel = mode === "carousel";
+  const categoryClass = displayCategory
+    ? CATEGORY_COLORS[displayCategory] ?? "bg-card/25 text-muted-foreground"
+    : "bg-card/25 text-muted-foreground";
+  const isPro = member.plan === "pro";
+
+  const handleClick = () => {
+    trackClientEvent("paid_member_spotlight_clicked", {
+      member_user_id: member.id,
+      idea_id: member.idea_id,
+      category: category ?? "all",
+      position,
+    });
+  };
+
+  return (
+    <Link href={profileHref} onClick={handleClick} className="group block">
+      <div
+        className={`relative overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br from-card/80 via-card/50 to-panel/30 transition-all duration-300 hover:border-fire/30 hover:shadow-[0_0_40px_rgba(220,60,30,0.08)] ${
+          isCarousel ? "p-6" : "p-5"
+        }`}
+      >
+        {isPro && (
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fire/60 to-transparent" />
+        )}
+
+        <div className="flex items-start gap-4">
+          <div className="relative shrink-0">
+            <Avatar src={member.image} name={name} size={isCarousel ? 56 : 48} />
+            {isPro && (
+              <div className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-fire text-white shadow-lg shadow-fire/30">
+                <Sparkles className="h-3 w-3" />
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-bold leading-tight text-foreground group-hover:text-fire transition-colors">
+                {name}
+              </h3>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                  isPro
+                    ? "bg-fire/15 text-fire border border-fire/25"
+                    : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
+                }`}
+              >
+                {isPro ? (
+                  <>
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Pro
+                  </>
+                ) : (
+                  <>
+                    <BadgeCheck className="h-2.5 w-2.5" />
+                    Launch
+                  </>
+                )}
+              </span>
+            </div>
+
+            {member.idea_name && (
+              <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {member.idea_name}
+              </p>
+            )}
+
+            <p className={`mt-2 leading-relaxed text-muted-foreground ${isCarousel ? "text-sm" : "text-xs"} line-clamp-2`}>
+              {headline}
+            </p>
+          </div>
+
+          <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-fire" />
+        </div>
+
+        <div className={`mt-4 flex flex-wrap items-center gap-2 ${isCarousel ? "gap-3" : "gap-2"}`}>
+          {displayCategory && (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${categoryClass}`}>
+              {displayCategory}
+            </span>
+          )}
+
+          {member.idea_elo_score && Number(member.idea_elo_score) > 0 && (
+            <div className="flex items-center gap-1 rounded-full bg-panel/60 px-2.5 py-1 text-xs">
+              <TrendingUp className="h-3 w-3 text-fire" />
+              <span className="font-bold text-foreground">{formatNumber(member.idea_elo_score)}</span>
+              <span className="text-muted-foreground">Elo</span>
+            </div>
+          )}
+
+          {winRate !== null && (
+            <div className="flex items-center gap-1 rounded-full bg-panel/60 px-2.5 py-1 text-xs">
+              <Swords className="h-3 w-3 text-amber-400" />
+              <span className="font-bold text-foreground">{winRate}%</span>
+              <span className="text-muted-foreground">win</span>
+            </div>
+          )}
+
+          {member.profile_cta_url && (
+            <a
+              href={member.profile_cta_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.stopPropagation();
+                trackClientEvent("profile_cta_clicked", {
+                  profile_user_id: member.id,
+                  idea_id: member.idea_id,
+                  source: "paid_member_spotlight",
+                });
+              }}
+              className="ml-auto inline-flex items-center gap-1 rounded-full bg-fire/10 px-3 py-1 text-xs font-semibold text-fire transition-colors hover:bg-fire/20"
+            >
+              {member.profile_cta_label || "Visit"}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
 }
 
 export function PaidMemberSpotlight({
   category,
   limit = 6,
-  title = "Featured founders",
+  title = "Arena spotlight",
   compact = false,
   placement = "section",
+  variant = "grid",
 }: PaidMemberSpotlightProps) {
   const [members, setMembers] = useState<FeaturedMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -60,8 +218,14 @@ export function PaidMemberSpotlight({
         if (!res.ok) throw new Error("Failed to load featured members");
         return res.json() as Promise<FeaturedMember[]>;
       })
-      .then(setMembers)
-      .catch(() => setMembers([]))
+      .then((nextMembers) => {
+        setMembers(nextMembers);
+        setActiveIndex(0);
+      })
+      .catch(() => {
+        setMembers([]);
+        setActiveIndex(0);
+      })
       .finally(() => setLoading(false));
 
     return () => controller.abort();
@@ -79,146 +243,167 @@ export function PaidMemberSpotlight({
     });
   }, [members, category]);
 
+  const slideCount = members.length;
+
+  useEffect(() => {
+    if (variant !== "carousel" || paused || slideCount < 2) return;
+
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % slideCount);
+    }, 6000);
+
+    return () => window.clearInterval(timer);
+  }, [paused, slideCount, variant]);
+
+  const goToSlide = (nextIndex: number) => {
+    if (slideCount === 0) return;
+    setActiveIndex((nextIndex + slideCount) % slideCount);
+  };
+
+  const sectionClass =
+    placement === "bottom"
+      ? "mt-10 border-t border-border/20 pt-8"
+      : "mb-8";
+
   if (loading) {
     return (
-      <section className={`${placement === "rail" ? "mb-0" : "mb-6"} border border-border/30 bg-card/15 p-4`}>
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-fire" />
+      <section className={sectionClass}>
+        <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-fire" />
           Loading featured founders
         </div>
       </section>
     );
   }
 
-  return (
-    <section className={`${placement === "rail" ? "mb-0 xl:sticky xl:top-16" : "mb-6"} border border-border/30 bg-card/15 p-4`}>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-fire/30 bg-fire/10 text-fire">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-black uppercase tracking-widest">{title}</h2>
-            {category && (
-              <p className="text-xs text-muted-foreground">{category} slots</p>
-            )}
-          </div>
-        </div>
-        <Link
-          href="/founders"
-          className="shrink-0 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-fire"
-        >
-          All founders
-        </Link>
-      </div>
-
-      {members.length === 0 ? (
-        <div className="border border-dashed border-border/40 bg-background/25 px-4 py-5 text-center">
-          <p className="text-sm font-semibold">No paid members featured yet.</p>
-          <p className="mx-auto mt-1 max-w-xl text-xs text-muted-foreground">
-            Paid founders will appear here with profile links, CTAs, and category visibility once they upgrade.
+  if (members.length === 0) {
+    return (
+      <section className={sectionClass}>
+        <div className="rounded-xl border border-dashed border-border/30 bg-gradient-to-br from-card/40 to-panel/10 p-8 text-center">
+          <Sparkles className="mx-auto h-8 w-8 text-fire/40" />
+          <p className="mt-3 text-base font-bold">Claim the spotlight</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            Featured founders appear here with profile links, custom CTAs, and category visibility.
           </p>
           <Link
             href="/pricing"
-            className="mt-3 inline-flex items-center justify-center border border-fire/35 px-3 py-2 text-xs font-bold uppercase tracking-wider text-fire transition-colors hover:bg-fire/10"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-fire px-4 py-2 text-sm font-bold text-white transition-all hover:bg-fire/90 hover:shadow-[0_0_30px_rgba(220,60,30,0.3)]"
           >
-            Become featured
+            Get featured
+            <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-      ) : (
-        <div className={placement === "rail" ? "grid gap-2" : compact ? "grid gap-2 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
-          {members.map((member, index) => {
-            const name = member.name || "Anonymous founder";
-            const profileHref = founderPath({ id: member.id, name: member.name });
-            const headline = member.profile_headline || member.idea_pitch || "Featured paid member";
-            const recordTotal = Number(member.total_wins) + Number(member.total_losses);
-            const winRate = recordTotal > 0 ? Math.round((Number(member.total_wins) / recordTotal) * 100) : 0;
-            const displayCategory = member.idea_category || member.profile_featured_category;
+      </section>
+    );
+  }
 
-            return (
-              <div key={`${member.id}-${member.idea_id ?? "profile"}`} className="border border-border/25 bg-background/35 p-3">
-                <div className="flex items-start gap-3">
-                  <Avatar src={member.image} name={name} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={profileHref}
-                        onClick={() => {
-                          trackClientEvent("paid_member_spotlight_clicked", {
-                            member_user_id: member.id,
-                            idea_id: member.idea_id,
-                            category: category ?? "all",
-                            position: index + 1,
-                          });
-                        }}
-                        className="truncate text-sm font-bold transition-colors hover:text-fire"
-                      >
-                        {name}
-                      </Link>
-                      <span className="inline-flex items-center gap-1 border border-fire/30 bg-fire/5 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fire">
-                        <Crown className="h-2.5 w-2.5" />
-                        {member.plan === "pro" ? "Pro" : "Launch"}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{headline}</p>
-                  </div>
-                </div>
+  if (variant === "carousel") {
+    return (
+      <section className={sectionClass}>
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-fire">
+              {category ? `${category} founders` : "Featured founders"}
+            </p>
+            <h2 className="mt-1 font-[family-name:var(--font-chakra)] text-xl font-black">
+              {title}
+            </h2>
+          </div>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {displayCategory && (
-                    <span className={`${CATEGORY_COLORS[displayCategory] ?? ""} px-1.5 py-0.5 text-[10px] font-semibold`}>
-                      {displayCategory}
-                    </span>
-                  )}
-                  {member.idea_elo_score ? (
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{member.idea_elo_score} Elo</span>
-                  ) : (
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Profile featured</span>
-                  )}
-                  {recordTotal > 0 && (
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{winRate}% win</span>
-                  )}
-                </div>
-
-                <div className="mt-3 flex gap-2">
-                  <Link
-                    href={profileHref}
-                    onClick={() => {
-                      trackClientEvent("paid_member_spotlight_clicked", {
-                        member_user_id: member.id,
-                        idea_id: member.idea_id,
-                        category: category ?? "all",
-                        position: index + 1,
-                      });
-                    }}
-                    className="inline-flex flex-1 items-center justify-center border border-border/40 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:border-fire/30 hover:text-fire"
-                  >
-                    Profile
-                  </Link>
-                  {member.profile_cta_url && (
-                    <a
-                      href={member.profile_cta_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => {
-                        trackClientEvent("profile_cta_clicked", {
-                          profile_user_id: member.id,
-                          idea_id: member.idea_id,
-                          source: "paid_member_spotlight",
-                        });
-                      }}
-                      className="inline-flex items-center justify-center gap-1 border border-fire/35 bg-fire/10 px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-fire transition-colors hover:bg-fire/15"
-                    >
-                      {member.profile_cta_label || "Visit"}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {slideCount > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => goToSlide(activeIndex - 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border/40 text-muted-foreground transition-all hover:border-fire/30 hover:text-fire hover:shadow-[0_0_15px_rgba(220,60,30,0.15)]"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => goToSlide(activeIndex + 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border/40 text-muted-foreground transition-all hover:border-fire/30 hover:text-fire hover:shadow-[0_0_15px_rgba(220,60,30,0.15)]"
+                aria-label="Next"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        <div
+          className="overflow-hidden rounded-xl"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          <div
+            className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{ transform: `translate3d(-${activeIndex * 100}%, 0, 0)` }}
+          >
+            {members.map((member, index) => (
+              <div key={member.id} className="min-w-full px-0.5">
+                <MemberCard member={member} category={category} position={index + 1} mode="carousel" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {slideCount > 1 && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              {members.map((_, index) => (
+                <button
+                  key={`dot-${members[index].id}`}
+                  type="button"
+                  onClick={() => goToSlide(index)}
+                  className={`rounded-full transition-all duration-300 ${
+                    activeIndex === index
+                      ? "h-2 w-8 bg-fire shadow-[0_0_8px_rgba(220,60,30,0.4)]"
+                      : "h-2 w-2 bg-border/60 hover:bg-muted-foreground/40"
+                  }`}
+                  aria-label={`Show slide ${index + 1}`}
+                />
+              ))}
+            </div>
+            <Link
+              href="/founders"
+              className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-fire"
+            >
+              All founders
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section className={sectionClass}>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-fire">
+            {category ? `${category} founders` : "Featured founders"}
+          </p>
+          <h2 className={`font-[family-name:var(--font-chakra)] ${compact ? "text-base" : "text-lg"} font-black`}>
+            {title}
+          </h2>
+        </div>
+        <Link
+          href="/founders"
+          className="shrink-0 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-fire"
+        >
+          View all
+          <ArrowUpRight className="h-3 w-3" />
+        </Link>
+      </div>
+
+      <div className={compact ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"}>
+        {members.map((member, index) => (
+          <MemberCard key={`${member.id}-${member.idea_id ?? "profile"}`} member={member} category={category} position={index + 1} mode="grid" />
+        ))}
+      </div>
     </section>
   );
 }

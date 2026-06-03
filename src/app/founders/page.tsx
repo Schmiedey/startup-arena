@@ -103,7 +103,7 @@ export default function FoundersPage() {
         </div>
       </div>
 
-      <PaidMemberSpotlight title="Paid member spotlight" compact />
+      <PaidMemberSpotlight compact />
 
       {founders.length === 0 ? (
         <div className="py-20 text-center">
