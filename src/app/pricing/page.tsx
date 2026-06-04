@@ -35,17 +35,18 @@ const LAUNCH_FEATURES = [
   { label: "Premium founder profile", detail: "Headline, bio, CTA link, and category filter" },
   { label: "Challenge links for each idea", detail: "Share a direct link to battle your idea" },
   { label: "Lead capture form", detail: "Collect emails from interested voters" },
+  { label: "Spotlight analytics", detail: "See how many views and clicks your profile gets" },
   { label: "Everything in Free", detail: null },
 ];
 
 const PRO_FEATURES = [
   { label: "Unlimited ideas", detail: "No cap on how many you submit" },
   { label: "Category battle targeting", detail: "Choose which category your ideas battle in" },
-  { label: "Featured placement slots", detail: "Priority rotation in spotlight sections" },
-  { label: "Private analytics dashboard", detail: "Views, votes, reasons, and conversion data" },
+  { label: "Priority spotlight placement", detail: "Your card shows before Launch members" },
+  { label: "Private analytics dashboard", detail: "Full idea analytics — views, votes, Elo trends, CTA conversions" },
   { label: "Founder updates", detail: "Post updates that reach all voters on your ideas" },
-  { label: "Weekly digest placement", detail: "Get featured in the weekly top performers email" },
-  { label: "Private feedback queue", detail: "Receive structured feedback from voters" },
+  { label: "Weekly digest queue", detail: "Your ideas appear in the weekly momentum digest" },
+  { label: "Private feedback insights", detail: "Automated coaching based on your idea performance" },
   { label: "Everything in Launch Pass", detail: null },
 ];
 
@@ -109,11 +110,12 @@ const COMPARISON = [
   { feature: "Featured spotlight placement", free: false, launch: true, pro: "Priority" },
   { feature: "Challenge links", free: false, launch: true, pro: true },
   { feature: "Lead capture form", free: false, launch: true, pro: true },
+  { feature: "Spotlight analytics", free: false, launch: true, pro: true },
   { feature: "Category targeting", free: false, launch: false, pro: true },
-  { feature: "Private analytics", free: false, launch: false, pro: true },
+  { feature: "Full analytics dashboard", free: false, launch: false, pro: true },
   { feature: "Founder updates", free: false, launch: false, pro: true },
-  { feature: "Weekly digest placement", free: false, launch: false, pro: true },
-  { feature: "Private feedback queue", free: false, launch: false, pro: true },
+  { feature: "Weekly digest queue", free: false, launch: false, pro: true },
+  { feature: "Private feedback insights", free: false, launch: false, pro: true },
 ];
 
 export default function PricingPage() {

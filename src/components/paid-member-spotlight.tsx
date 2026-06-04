@@ -206,11 +206,12 @@ function PlanCard({ plan }: { plan: "launch" | "pro" | "free" }) {
             <span className="text-xs font-bold uppercase tracking-widest text-fire">Launch Pass</span>
             <span className="ml-auto text-xs font-bold text-fire">$19</span>
           </div>
-          <ul className="space-y-1.5 text-xs text-muted-foreground">
-            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Profile spotlight rotation</li>
-            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Custom CTA link on your card</li>
-            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Premium founder profile</li>
-          </ul>
+<ul className="space-y-1.5 text-xs text-muted-foreground">
+                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Profile spotlight rotation</li>
+                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Custom CTA link on your card</li>
+                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Premium founder profile</li>
+                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Lead capture form</li>
+                </ul>
           <Link
             href="/pricing"
             className="mt-4 flex items-center justify-center gap-1.5 rounded-full bg-fire px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-fire/90"
@@ -233,11 +234,11 @@ function PlanCard({ plan }: { plan: "launch" | "pro" | "free" }) {
             <span className="text-xs font-bold uppercase tracking-widest text-amber-400">Founder Pro</span>
             <span className="ml-auto text-xs font-bold text-amber-400">$12/mo</span>
           </div>
-          <ul className="space-y-1.5 text-xs text-muted-foreground">
-            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Everything in Launch</li>
-            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Priority spotlight slots</li>
-            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Private analytics & feedback</li>
-          </ul>
+<ul className="space-y-1.5 text-xs text-muted-foreground">
+                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Everything in Launch</li>
+                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Priority spotlight slots</li>
+                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Full analytics dashboard</li>
+                </ul>
           <Link
             href="/pricing"
             className="mt-4 flex items-center justify-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 transition-all hover:bg-amber-500/20"
