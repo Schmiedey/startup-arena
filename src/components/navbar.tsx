@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Trophy, Plus, Home, LogOut, LayoutDashboard, Sun, Moon, Users, Shield, Menu, X } from "lucide-react";
+import { Trophy, Plus, Home, LogOut, LayoutDashboard, Sun, Moon, Users, Shield, Menu, X, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { useFormStatus } from "react-dom";
@@ -42,6 +42,7 @@ export function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const prevPathname = useRef(pathname);
@@ -52,6 +53,20 @@ export function Navbar() {
       setMobileMenuOpen(false);
     }
   }, [pathname]);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    let active = true;
+    function poll() {
+      fetch("/api/messages/unread-count")
+        .then((r) => r.ok ? r.json() : { unreadCount: 0 })
+        .then((d) => { if (active) setUnreadCount(d.unreadCount ?? 0); })
+        .catch(() => {});
+    }
+    poll();
+    const id = setInterval(poll, 15000);
+    return () => { active = false; clearInterval(id); };
+  }, [session]);
 
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -126,6 +141,19 @@ export function Navbar() {
                     >
                       <LayoutDashboard className="h-3 w-3" />
                       Dashboard
+                    </Link>
+                    <Link
+                      href="/messages"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-panel hover:text-foreground"
+                    >
+                      <Mail className="h-3 w-3" />
+                      Messages
+                      {unreadCount > 0 && (
+                        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-fire px-1 text-[10px] font-bold text-fire-foreground">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
                     </Link>
                     {session.user.isAdmin && (
                       <Link
@@ -235,6 +263,18 @@ export function Navbar() {
                   >
                     <LayoutDashboard className="h-4 w-4" />
                     Dashboard
+                  </Link>
+                  <Link
+                    href="/messages"
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-panel"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Messages
+                    {unreadCount > 0 && (
+                      <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-fire px-1 text-[10px] font-bold text-fire-foreground">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                   </Link>
                   {session.user.isAdmin && (
                     <Link

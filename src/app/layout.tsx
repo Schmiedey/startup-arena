@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
+import { ChatWidget } from "@/components/chat-widget";
 import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
@@ -113,6 +114,7 @@ export default function RootLayout({
             <JsonLd data={siteJsonLd} />
             <Navbar />
             <main className="flex-1">{children}</main>
+            <ChatWidget />
             <footer className="border-t border-border/30 py-8 text-center">
               <div className="mx-auto max-w-5xl px-6">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground/50">Likelyr - startup idea validation by real votes</p>

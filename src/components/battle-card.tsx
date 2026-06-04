@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSurvivalRating } from "@/lib/elo";
-import { Crown, ExternalLink, Trophy, Zap, TrendingUp } from "lucide-react";
+import { Crown, ExternalLink, Trophy, Zap, TrendingUp, Mail } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { founderPath } from "@/lib/seo";
 import { trackClientEvent } from "@/lib/analytics-client";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface BattleCardProps {
   idea: Idea;
@@ -27,6 +29,8 @@ export function BattleCard({
   isWinner,
   isLoser,
 }: BattleCardProps) {
+  const { data: session } = useSession();
+  const router = useRouter();
   const survivalRating = getSurvivalRating(idea.elo_score);
   const [pressing, setPressing] = useState(false);
   const isPaidIdea = idea.user_plan === "launch" || idea.user_plan === "pro";
@@ -59,6 +63,15 @@ export function BattleCard({
           <div className="min-w-0">
             <h3 className="text-xl font-bold leading-tight">{idea.name}</h3>
             <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{idea.pitch}</p>
+            {voted && idea.user_id && idea.user_name && session?.user && session.user.id !== idea.user_id && !isPaidIdea && (
+              <button
+                onClick={() => router.push(`/messages/${idea.user_id}`)}
+                className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-fire transition-colors"
+              >
+                <Mail className="h-3 w-3" />
+                Message {idea.user_name.split(" ")[0]}
+              </button>
+            )}
           </div>
           <Badge
             variant="outline"
@@ -139,6 +152,15 @@ export function BattleCard({
               >
                 Profile
               </Link>
+              {session?.user && session.user.id !== idea.user_id && (
+                <button
+                  onClick={() => router.push(`/messages/${idea.user_id}`)}
+                  className="inline-flex items-center justify-center gap-1 border border-fire/35 bg-fire/10 px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-fire transition-colors hover:bg-fire/15"
+                >
+                  <Mail className="h-3 w-3" />
+                  Message
+                </button>
+              )}
               {idea.profile_cta_url && (
                 <a
                   href={idea.profile_cta_url}

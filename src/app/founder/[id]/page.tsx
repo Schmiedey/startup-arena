@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/json-ld";
 import { absoluteUrl, extractEntityId, founderPath, ideaPath } from "@/lib/seo";
 import { FounderProfileTracker } from "@/components/founder-profile-tracker";
 import { FounderLeadForm } from "@/components/founder-lead-form";
+import { MessageFounderButton } from "@/components/message-founder-button";
 
 export default async function FounderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
@@ -139,12 +140,15 @@ export default async function FounderPage({ params }: { params: Promise<{ id: st
     <div className="mx-auto max-w-4xl px-6 py-10">
       <JsonLd data={jsonLd} />
       <FounderProfileTracker founderUserId={id} />
-      <Link
-        href="/founders"
-        className="mb-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
-      >
-        &larr; founders
-      </Link>
+      <div className="flex items-center justify-between mb-6">
+        <Link
+          href="/founders"
+          className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+        >
+          &larr; founders
+        </Link>
+        <MessageFounderButton founderUserId={id} founderName={displayName} />
+      </div>
 
 <div className="mb-8 flex items-center gap-5">
         <Avatar src={user.image} name={user.name} size={64} className="border-2 border-border/50" />
