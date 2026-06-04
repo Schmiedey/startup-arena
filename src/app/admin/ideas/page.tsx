@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
+import { Loader2, Check, X, Trash2, Search } from "lucide-react";
 import Link from "next/link";
-import { Search, Trash2 } from "lucide-react";
-import { CATEGORY_COLORS } from "@/lib/types";
 
 interface AdminIdea {
   id: string;
@@ -15,104 +14,252 @@ interface AdminIdea {
   elo_score: number;
   wins: number;
   losses: number;
+  status: string;
+  image_url: string | null;
+  created_at: string;
+  user_id: string | null;
   user_name: string | null;
+  user_image: string | null;
 }
 
-interface IdeasData {
-  ideas: AdminIdea[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
+const STATUS_COLORS: Record<string, string> = {
+  approved: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  pending: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  rejected: "bg-red-500/15 text-red-400 border-red-500/30",
+};
 
 export default function AdminIdeasPage() {
-  const [data, setData] = useState<IdeasData | null>(null);
+  const [ideas, setIdeas] = useState<AdminIdea[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [actioning, setActioning] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      const params = new URLSearchParams({ page: String(page), search, status: statusFilter });
+      const res = await fetch(`/api/admin/ideas?${params}`);
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setIdeas(data.ideas);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
+    } catch {
+      setIdeas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    params.set("page", String(page));
-    fetch(`/api/admin/ideas?${params}`)
-      .then((r): Promise<IdeasData> => {
-        if (!r.ok) throw new Error("Failed to load ideas");
-        return r.json();
-      })
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, [search, page]);
+    let active = true;
+    (async () => {
+      setLoading(true);
+      const params = new URLSearchParams({ page: String(page) });
+      if (search) params.set("search", search);
+      if (statusFilter) params.set("status", statusFilter);
+      try {
+        const res = await fetch(`/api/admin/ideas?${params}`);
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        if (active) {
+          setIdeas(data.ideas);
+          setTotal(data.total);
+          setTotalPages(data.totalPages);
+        }
+      } catch {
+        if (active) setIdeas([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [page, search, statusFilter]);
 
-  async function deleteIdea(ideaId: string) {
-    if (!confirm("Delete this idea and all related data?")) return;
-    await fetch(`/api/admin/ideas?ideaId=${ideaId}`, { method: "DELETE" });
-    setData((prev) => prev ? ({
-      ...prev,
-      ideas: prev.ideas.filter((i) => i.id !== ideaId),
-      total: prev.total - 1,
-    }) : prev);
+  async function handleApprove(ideaId: string) {
+    setActioning(ideaId);
+    try {
+      const res = await fetch("/api/admin/ideas", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ideaId, status: "approved" }),
+      });
+      if (res.ok) await load();
+    } catch {
+      // ignore
+    } finally {
+      setActioning(null);
+    }
   }
+
+  async function handleReject(ideaId: string) {
+    setActioning(ideaId);
+    try {
+      const res = await fetch("/api/admin/ideas", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ideaId, status: "rejected" }),
+      });
+      if (res.ok) await load();
+    } catch {
+      // ignore
+    } finally {
+      setActioning(null);
+    }
+  }
+
+  async function handleDelete(ideaId: string) {
+    if (!confirm("Delete this idea permanently?")) return;
+    setActioning(ideaId);
+    try {
+      const res = await fetch(`/api/admin/ideas?ideaId=${ideaId}`, { method: "DELETE" });
+      if (res.ok) await load();
+    } catch {
+      // ignore
+    } finally {
+      setActioning(null);
+    }
+  }
+
+  if (loading) return <AdminLayout><div className="py-20 text-center"><Loader2 className="inline h-6 w-6 animate-spin text-fire" /></div></AdminLayout>;
+
+  const pendingCount = ideas.filter((i) => i.status === "pending").length;
 
   return (
     <AdminLayout>
-      <div className="mb-4 relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-sm font-bold uppercase tracking-wider">Ideas ({total})</h2>
+        <div className="flex items-center gap-2">
+          {statusFilter !== "pending" && (
+            <span className="text-xs text-muted-foreground">Filter:</span>
+          )}
+          <div className="flex gap-1">
+            {["", "pending", "approved", "rejected"].map((s) => (
+              <button
+                key={s}
+                onClick={() => { setStatusFilter(s); setPage(1); }}
+                className={`rounded-none px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                  statusFilter === s
+                    ? "bg-fire/10 text-fire border border-fire/30"
+                    : "text-muted-foreground hover:text-foreground border border-transparent"
+                }`}
+              >
+                {s || "All"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-3 relative">
+        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <input
+          type="text"
           value={search}
-          onChange={(e) => { setLoading(true); setSearch(e.target.value); setPage(1); }}
-          placeholder="Search ideas by name or pitch..."
-          className="w-full rounded-none border border-border/50 bg-background/50 pl-10 pr-4 py-2 text-sm focus:border-fire/50 focus:outline-none focus:ring-1 focus:ring-fire/30"
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          placeholder="Search ideas..."
+          className="w-full rounded-none border border-border/40 bg-card/20 py-2 pl-9 pr-3 text-sm outline-none focus:border-fire/50"
         />
       </div>
 
-      {loading ? (
-        <div className="py-20 text-center text-muted-foreground">Loading...</div>
-      ) : !data ? (
-        <div className="py-20 text-center text-muted-foreground">Failed to load</div>
-      ) : (
-        <>
-          <p className="mb-4 text-xs text-muted-foreground">{data.total} ideas total</p>
-          <div className="space-y-1">
-            {data.ideas.map((idea) => (
-              <div key={idea.id} className="flex items-center gap-3 border border-border/20 bg-card/10 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <Link href={`/idea/${idea.id}`} className="font-semibold text-sm hover:text-fire transition-colors truncate">{idea.name}</Link>
-                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${CATEGORY_COLORS[idea.category] ?? ""}`}>{idea.category}</span>
-                    <span className="rounded-full border px-1.5 py-0 text-[10px] bg-blue-500/20 text-blue-400 border-blue-500/30">{idea.stage}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">{idea.pitch}</p>
-                  <p className="text-[10px] text-muted-foreground">by {idea.user_name || "Unknown"}</p>
+      {pendingCount > 0 && statusFilter !== "approved" && statusFilter !== "rejected" && (
+        <div className="mb-3 border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-xs text-amber-400">
+          {pendingCount} idea{pendingCount > 1 ? "s" : ""} pending review
+        </div>
+      )}
+
+      <div className="space-y-1">
+        {ideas.map((idea) => (
+          <div key={idea.id} className="border border-border/20 bg-card/10 px-4 py-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Link href={`/idea/${idea.id}`} className="text-sm font-semibold hover:text-fire transition-colors truncate">
+                    {idea.name}
+                  </Link>
+                  <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${STATUS_COLORS[idea.status] || STATUS_COLORS.pending}`}>
+                    {idea.status}
+                  </span>
+                  {idea.image_url && (
+                    <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-blue-400">has image</span>
+                  )}
                 </div>
-                <div className="hidden sm:flex items-center gap-4 text-xs shrink-0">
-                  <div className="text-center">
-                    <p className="font-bold text-fire">{idea.elo_score}</p>
-                    <p className="text-[10px] text-muted-foreground">elo</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-semibold"><span className="text-emerald-400">{idea.wins}W</span> / <span className="text-red-400">{idea.losses}L</span></p>
-                  </div>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{idea.pitch}</p>
+                <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span>{idea.category}</span>
+                  <span>·</span>
+                  <span>{idea.stage}</span>
+                  <span>·</span>
+                  <span className="text-fire font-semibold">{idea.elo_score} Elo</span>
+                  <span>·</span>
+                  <span className="text-emerald-400">{idea.wins}W</span>
+                  <span className="text-red-400">{idea.losses}L</span>
+                  {idea.user_name && (
+                    <>
+                      <span>·</span>
+                      <span>by {idea.user_name}</span>
+                    </>
+                  )}
                 </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {idea.status !== "approved" && (
+                  <button
+                    onClick={() => handleApprove(idea.id)}
+                    disabled={actioning === idea.id}
+                    className="flex items-center gap-1 rounded-none border border-emerald-500/30 bg-emerald-500/5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-40"
+                    title="Approve"
+                  >
+                    {actioning === idea.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                    Approve
+                  </button>
+                )}
+                {idea.status !== "rejected" && (
+                  <button
+                    onClick={() => handleReject(idea.id)}
+                    disabled={actioning === idea.id}
+                    className="flex items-center gap-1 rounded-none border border-amber-500/30 bg-amber-500/5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-400 hover:bg-amber-500/10 disabled:opacity-40"
+                    title="Reject"
+                  >
+                    <X className="h-3 w-3" />
+                    Reject
+                  </button>
+                )}
                 <button
-                  onClick={() => deleteIdea(idea.id)}
-                  className="rounded-none p-1.5 text-muted-foreground hover:text-red-400 transition-colors shrink-0"
-                  title="Delete idea"
+                  onClick={() => handleDelete(idea.id)}
+                  disabled={actioning === idea.id}
+                  className="flex h-6 w-6 items-center justify-center text-muted-foreground hover:text-red-400 disabled:opacity-40"
+                  title="Delete"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  {actioning === idea.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                 </button>
               </div>
-            ))}
-          </div>
-          {data.totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <button onClick={() => { setLoading(true); setPage(Math.max(1, page - 1)); }} disabled={page === 1} className="rounded-none border border-border/40 px-3 py-1 text-xs disabled:opacity-40">Prev</button>
-              <span className="text-xs text-muted-foreground">{page} / {data.totalPages}</span>
-              <button onClick={() => { setLoading(true); setPage(Math.min(data.totalPages, page + 1)); }} disabled={page === data.totalPages} className="rounded-none border border-border/40 px-3 py-1 text-xs disabled:opacity-40">Next</button>
             </div>
-          )}
-        </>
+          </div>
+        ))}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="rounded-none border border-border/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground disabled:opacity-40"
+          >
+            Prev
+          </button>
+          <span className="text-xs text-muted-foreground">Page {page} of {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="rounded-none border border-border/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
       )}
     </AdminLayout>
   );

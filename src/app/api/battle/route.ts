@@ -130,6 +130,7 @@ export async function GET(request: Request) {
               u.profile_featured_category
             FROM ideas i LEFT JOIN users u ON i.user_id = u.id
             WHERE i.id <> ${challengeIdeaId}
+              AND i.status = 'approved'
               AND i.user_id IS DISTINCT FROM ${user.id}
             ORDER BY
               CASE WHEN i.category = ${ideaA.category} THEN 0 ELSE 1 END,
@@ -151,6 +152,7 @@ export async function GET(request: Request) {
               u.profile_featured_category
             FROM ideas i LEFT JOIN users u ON i.user_id = u.id
             WHERE i.id <> ${challengeIdeaId}
+              AND i.status = 'approved'
             ORDER BY
               CASE WHEN i.category = ${ideaA.category} THEN 0 ELSE 1 END,
               ABS(i.elo_score - ${ideaA.elo_score}),
@@ -251,6 +253,7 @@ export async function GET(request: Request) {
             u.profile_featured_category
           FROM ideas i LEFT JOIN users u ON i.user_id = u.id
           WHERE i.user_id IS DISTINCT FROM ${user.id}
+            AND i.status = 'approved'
             AND (${category}::text IS NULL OR i.category = ${category})
           ORDER BY i.elo_score DESC
         `
@@ -267,7 +270,8 @@ export async function GET(request: Request) {
             COALESCE(u.profile_show_contact, true) as profile_show_contact,
             u.profile_featured_category
           FROM ideas i LEFT JOIN users u ON i.user_id = u.id
-          WHERE (${category}::text IS NULL OR i.category = ${category})
+          WHERE i.status = 'approved'
+            AND (${category}::text IS NULL OR i.category = ${category})
           ORDER BY i.elo_score DESC
         `;
     const ideas = ideasResult.rows;

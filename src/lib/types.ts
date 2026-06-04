@@ -41,6 +41,8 @@ export interface Idea {
   wins: number;
   losses: number;
   created_at: string;
+  image_url?: string | null;
+  status?: "pending" | "approved" | "rejected";
   user_name?: string | null;
   user_image?: string | null;
   user_plan?: "free" | "launch" | "pro" | null;

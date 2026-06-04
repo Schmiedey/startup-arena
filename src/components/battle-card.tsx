@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSurvivalRating } from "@/lib/elo";
 import { Crown, ExternalLink, Trophy, Zap, TrendingUp, Mail } from "lucide-react";
+import Image from "next/image";
 import { Avatar } from "@/components/avatar";
 import { founderPath } from "@/lib/seo";
 import { trackClientEvent } from "@/lib/analytics-client";
@@ -59,6 +60,18 @@ export function BattleCard({
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-fire via-ember to-fire shimmer" />
       )}
       <div className="p-5 space-y-4">
+        {idea.image_url && (
+          <div className="relative -mx-5 -mt-5 mb-4 overflow-hidden">
+            <Image
+              src={idea.image_url}
+              alt={idea.name}
+              width={400}
+              height={160}
+              className="w-full h-40 object-cover"
+            />
+            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card/90 to-transparent" />
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="text-xl font-bold leading-tight">{idea.name}</h3>

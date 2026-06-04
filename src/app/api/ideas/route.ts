@@ -55,11 +55,16 @@ export async function POST(request: Request) {
   }
 
   const body = validation.data;
+  const imageUrl = body.image_url || null;
+
+  const settingsResult = await sql`SELECT auto_accept_ideas FROM site_settings WHERE id = 1`;
+  const autoAccept = settingsResult.rows[0]?.auto_accept_ideas !== false;
+  const ideaStatus = autoAccept ? "approved" : "pending";
 
   try {
     const result = await sql`
-      INSERT INTO ideas (user_id, name, pitch, target_customer, problem, revenue_model, category, stage)
-      VALUES (${user.id}, ${body.name}, ${body.pitch}, ${body.target_customer}, ${body.problem}, ${body.revenue_model}, ${body.category}, ${body.stage})
+      INSERT INTO ideas (user_id, name, pitch, target_customer, problem, revenue_model, category, stage, image_url, status)
+      VALUES (${user.id}, ${body.name}, ${body.pitch}, ${body.target_customer}, ${body.problem}, ${body.revenue_model}, ${body.category}, ${body.stage}, ${imageUrl}, ${ideaStatus})
       RETURNING *
     `;
     await trackEvent({
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
       path: new URL(request.url).pathname,
       metadata: { category: body.category, stage: body.stage, plan: user.plan },
     });
-    return NextResponse.json(result.rows[0], { status: 201 });
+    return NextResponse.json({ ...result.rows[0], _pending: ideaStatus === "pending" }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Insert failed";
     return NextResponse.json({ error: message }, { status: 400 });
@@ -151,7 +156,7 @@ export async function GET(request: Request) {
             LEFT JOIN users u ON i.user_id = u.id
             LEFT JOIN comments c ON c.idea_id = i.id
             LEFT JOIN votes v ON v.winner_id = i.id
-            WHERE i.category = ${category}
+            WHERE i.category = ${category} AND i.status = 'approved'
             GROUP BY i.id, u.name, u.image, u.plan, u.subscription_status, u.launch_pass_purchased_at, u.profile_headline, u.profile_cta_label, u.profile_cta_url, u.profile_show_contact, u.profile_featured_category
             ORDER BY controversy_score DESC, (i.wins + i.losses) DESC, i.elo_score DESC
             LIMIT ${limit} OFFSET ${offset}
@@ -180,6 +185,7 @@ export async function GET(request: Request) {
             LEFT JOIN users u ON i.user_id = u.id
             LEFT JOIN comments c ON c.idea_id = i.id
             LEFT JOIN votes v ON v.winner_id = i.id
+            WHERE i.status = 'approved'
             GROUP BY i.id, u.name, u.image, u.plan, u.subscription_status, u.launch_pass_purchased_at, u.profile_headline, u.profile_cta_label, u.profile_cta_url, u.profile_show_contact, u.profile_featured_category
             ORDER BY controversy_score DESC, (i.wins + i.losses) DESC, i.elo_score DESC
             LIMIT ${limit} OFFSET ${offset}
@@ -201,7 +207,7 @@ export async function GET(request: Request) {
             COALESCE(u.profile_show_contact, true) as profile_show_contact,
             u.profile_featured_category
           FROM ideas i LEFT JOIN users u ON i.user_id = u.id
-          WHERE i.category = ${category}
+          WHERE i.category = ${category} AND i.status = 'approved'
           ORDER BY i.elo_score DESC
           LIMIT ${limit} OFFSET ${offset}
         `
@@ -218,6 +224,7 @@ export async function GET(request: Request) {
             COALESCE(u.profile_show_contact, true) as profile_show_contact,
             u.profile_featured_category
           FROM ideas i LEFT JOIN users u ON i.user_id = u.id
+          WHERE i.status = 'approved'
           ORDER BY i.elo_score DESC
           LIMIT ${limit} OFFSET ${offset}
         `;

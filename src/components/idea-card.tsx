@@ -1,6 +1,7 @@
 import { Idea, CATEGORY_COLORS, STAGE_COLORS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { getWinRate, getSurvivalRating, formatElo } from "@/lib/elo";
+import { MessageUserButton } from "@/components/message-user-button";
 import Link from "next/link";
 import { ideaPath } from "@/lib/seo";
 
@@ -45,6 +46,7 @@ export function IdeaCard({ idea, rank }: IdeaCardProps) {
                 {idea.controversy_score} heat
               </Badge>
             )}
+            {idea.user_id && <MessageUserButton userId={idea.user_id} size="xs" />}
           </div>
         </div>
         <div className="hidden shrink-0 items-center gap-5 sm:flex">

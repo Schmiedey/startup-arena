@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BarChart3, LayoutDashboard, Users, Lightbulb, MessageSquare, Vote, Loader2, Mail } from "lucide-react";
+import { BarChart3, LayoutDashboard, Users, Lightbulb, MessageSquare, Vote, Loader2, Mail, Settings } from "lucide-react";
 
 const tabs = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -16,6 +16,7 @@ const tabs = [
   { href: "/admin/comments", label: "Comments", icon: MessageSquare },
   { href: "/admin/messages", label: "Messages", icon: Mail },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Crown, Flame, ArrowLeft, Sparkles, Swords, TrendingUp, Zap } from "lucide-react";
 import { Avatar } from "@/components/avatar";
+import { MessageUserButton } from "@/components/message-user-button";
 import { founderPath } from "@/lib/seo";
 import { PaidMemberSpotlight } from "@/components/paid-member-spotlight";
 
@@ -205,6 +206,7 @@ export default function FoundersPage() {
                         <span className="font-bold tabular-nums">{Number(f.votes_cast)}</span>
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">votes</span>
                       </div>
+                      <MessageUserButton userId={f.id} size="xs" />
                     </div>
                   </div>
                 </div>

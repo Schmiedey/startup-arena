@@ -26,6 +26,8 @@ const LEAD_LIMITS = {
   source: 80,
 };
 
+const IMAGE_URL_LIMIT = 500;
+
 export interface IdeaInput {
   name: string;
   pitch: string;
@@ -34,6 +36,7 @@ export interface IdeaInput {
   revenue_model: string;
   category: Category;
   stage: Stage;
+  image_url?: string | null;
 }
 
 type IdeaUpdate = Partial<IdeaInput> & { id: string };
@@ -241,6 +244,7 @@ export function validateIdeaPayload(payload: unknown): ValidationResult<IdeaInpu
   if (!category.ok) return category;
   const stage = cleanStage(payload, true);
   if (!stage.ok) return stage;
+  const imageUrl = cleanOptionalUrl(payload, "image_url");
 
   const spamError = combinedPublicTextError([
     name.data,
@@ -250,6 +254,10 @@ export function validateIdeaPayload(payload: unknown): ValidationResult<IdeaInpu
     revenueModel.data,
   ]);
   if (spamError) return { ok: false, error: spamError };
+
+  if (imageUrl.ok && imageUrl.data && imageUrl.data.length > IMAGE_URL_LIMIT) {
+    return { ok: false, error: "Image URL must be 500 characters or fewer" };
+  }
 
   return {
     ok: true,
@@ -261,6 +269,7 @@ export function validateIdeaPayload(payload: unknown): ValidationResult<IdeaInpu
       revenue_model: revenueModel.data,
       category: category.data,
       stage: stage.data,
+      image_url: imageUrl.ok ? imageUrl.data : null,
     },
   };
 }
