@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, Flame, MessageSquare, Rocket, Swords, TrendingUp, Trophy } from "lucide-react";
 import { LikelyrBackground } from "@/components/likelyr-background";
+import { BattleScene3D } from "@/components/battle-scene-3d";
 import { TrendingIdeas } from "@/components/trending-ideas";
 import { HomeStats } from "@/components/home-stats";
 import { ScrollReveal } from "@/components/scroll-reveal";
@@ -60,37 +61,42 @@ export default function HomePage() {
         <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
           <div className="h-[500px] w-[500px] rounded-full bg-fire/10 blur-[150px] animate-pulse-ring" />
         </div>
-        <div className="relative z-10 mx-auto max-w-4xl px-6 pt-20 pb-16 sm:pt-28 sm:pb-32 w-full">
-          <div className="perspective-card">
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-fire animate-hero-text">
-              the startup arena
-            </p>
-            <h1 className="text-[2.8rem] leading-[0.95] font-black tracking-tight sm:text-[5.5rem] font-[family-name:var(--font-chakra)] animate-hero-text" style={{ animationDelay: "0.1s" }}>
-              vote on ideas
-              <br />
-              <span className="text-gradient-fire">predict the crowd</span>
-            </h1>
+        <div className="relative z-10 mx-auto max-w-6xl px-6 pt-20 pb-16 sm:pt-28 sm:pb-32 w-full">
+          <div className="grid gap-8 lg:grid-cols-2 lg:gap-12 items-center">
+            <div className="perspective-card">
+              <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-fire animate-hero-text">
+                the startup arena
+              </p>
+              <h1 className="text-[2.8rem] leading-[0.95] font-black tracking-tight sm:text-[5.5rem] font-[family-name:var(--font-chakra)] animate-hero-text" style={{ animationDelay: "0.1s" }}>
+                vote on ideas
+                <br />
+                <span className="text-gradient-fire">predict the crowd</span>
+              </h1>
+              <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground animate-hero-text" style={{ animationDelay: "0.25s" }}>
+                Submit a startup idea or vote in head-to-head battles. Ideas climb by surviving votes.
+                Voters climb by predicting the crowd signal before ratings are revealed.
+              </p>
+              <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center animate-hero-text" style={{ animationDelay: "0.4s" }}>
+                <Link
+                  href="/battle"
+                  className="group inline-flex items-center justify-center gap-2.5 rounded-none bg-fire px-8 py-4 text-base font-bold uppercase tracking-wider text-fire-foreground shadow-[0_0_40px_rgba(220,60,30,0.35)] transition-all hover:shadow-[0_0_60px_rgba(220,60,30,0.5)] hover:scale-[1.03] active:scale-[0.98]"
+                >
+                  start predicting
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+                <Link
+                  href="/submit"
+                  className="inline-flex items-center justify-center gap-2 rounded-none border border-border/60 px-8 py-4 text-base font-semibold uppercase tracking-wider transition-all hover:bg-panel hover:border-fire/30 hover:shadow-[0_0_20px_rgba(220,60,30,0.1)]"
+                >
+                  submit idea
+                </Link>
+              </div>
+              <HomeStats />
+            </div>
+            <div className="hidden lg:block relative h-[440px] animate-hero-text" style={{ animationDelay: "0.5s" }}>
+              <BattleScene3D />
+            </div>
           </div>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground animate-hero-text" style={{ animationDelay: "0.25s" }}>
-            Submit a startup idea or vote in head-to-head battles. Ideas climb by surviving votes.
-            Voters climb by predicting the crowd signal before ratings are revealed.
-          </p>
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center animate-hero-text" style={{ animationDelay: "0.4s" }}>
-            <Link
-              href="/battle"
-              className="group inline-flex items-center justify-center gap-2.5 rounded-none bg-fire px-8 py-4 text-base font-bold uppercase tracking-wider text-fire-foreground shadow-[0_0_40px_rgba(220,60,30,0.35)] transition-all hover:shadow-[0_0_60px_rgba(220,60,30,0.5)] hover:scale-[1.03] active:scale-[0.98]"
-            >
-              start predicting
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
-              href="/submit"
-              className="inline-flex items-center justify-center gap-2 rounded-none border border-border/60 px-8 py-4 text-base font-semibold uppercase tracking-wider transition-all hover:bg-panel hover:border-fire/30 hover:shadow-[0_0_20px_rgba(220,60,30,0.1)]"
-            >
-              submit idea
-            </Link>
-          </div>
-          <HomeStats />
         </div>
       </section>
 
