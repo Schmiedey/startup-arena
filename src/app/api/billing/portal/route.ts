@@ -1,3 +1,4 @@
+import { sql } from "@vercel/postgres";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getBillingUserByEmail } from "@/lib/billing";
@@ -13,8 +14,8 @@ export async function POST(request: Request) {
     }
 
     const user = await getBillingUserByEmail(session.user.email);
-    if (!user?.stripe_customer_id) {
-      return NextResponse.json({ error: "No Stripe customer found" }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const limited = await rateLimit(request, {
@@ -25,9 +26,33 @@ export async function POST(request: Request) {
     });
     if (!limited.ok) return rateLimitResponse(limited, "Too many billing portal requests. Try again soon.");
 
+    const stripe = getStripe();
+    let customerId = user.stripe_customer_id;
+
+    if (!customerId) {
+      const existingCustomers = await stripe.customers.list({ email: user.email, limit: 5 });
+      const activeCustomer = existingCustomers.data.find((c) => !("deleted" in c));
+
+      if (activeCustomer) {
+        customerId = activeCustomer.id;
+      } else {
+        const newCustomer = await stripe.customers.create({
+          email: user.email,
+          name: session.user?.name || undefined,
+          metadata: { userId: user.id },
+        });
+        customerId = newCustomer.id;
+      }
+
+      await sql`
+        UPDATE users SET stripe_customer_id = ${customerId}
+        WHERE id = ${user.id}
+      `;
+    }
+
     const origin = new URL(request.url).origin;
-    const portalSession = await getStripe().billingPortal.sessions.create({
-      customer: user.stripe_customer_id,
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customerId,
       return_url: `${origin}/dashboard`,
     });
 
@@ -35,7 +60,7 @@ export async function POST(request: Request) {
       name: "billing_portal_opened",
       userId: user.id,
       path: new URL(request.url).pathname,
-      metadata: { plan: user.plan },
+      metadata: { plan: user.plan, created_customer: !user.stripe_customer_id },
     });
 
     return NextResponse.json({ url: portalSession.url });
