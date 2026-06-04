@@ -194,6 +194,89 @@ function MemberCard({
   );
 }
 
+function PlanCard({ plan }: { plan: "launch" | "pro" | "free" }) {
+    if (plan === "launch") {
+      return (
+        <div className="relative overflow-hidden rounded-xl border border-fire/20 bg-gradient-to-br from-fire/5 to-card/30 p-5">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fire/50 to-transparent" />
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-fire/10">
+              <Zap className="h-3.5 w-3.5 text-fire" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-widest text-fire">Launch Pass</span>
+            <span className="ml-auto text-xs font-bold text-fire">$19</span>
+          </div>
+          <ul className="space-y-1.5 text-xs text-muted-foreground">
+            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Profile spotlight rotation</li>
+            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Custom CTA link on your card</li>
+            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Premium founder profile</li>
+          </ul>
+          <Link
+            href="/pricing"
+            className="mt-4 flex items-center justify-center gap-1.5 rounded-full bg-fire px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-fire/90"
+          >
+            Get featured
+            <ArrowUpRight className="h-3 w-3" />
+          </Link>
+        </div>
+      );
+    }
+
+    if (plan === "pro") {
+      return (
+        <div className="relative overflow-hidden rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-card/30 p-5">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10">
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">Founder Pro</span>
+            <span className="ml-auto text-xs font-bold text-amber-400">$12/mo</span>
+          </div>
+          <ul className="space-y-1.5 text-xs text-muted-foreground">
+            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Everything in Launch</li>
+            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Priority spotlight slots</li>
+            <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Private analytics & feedback</li>
+          </ul>
+          <Link
+            href="/pricing"
+            className="mt-4 flex items-center justify-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 transition-all hover:bg-amber-500/20"
+          >
+            Go Pro
+            <ArrowUpRight className="h-3 w-3" />
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative overflow-hidden rounded-xl border border-border/20 bg-gradient-to-br from-card/30 to-panel/10 p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-panel/60">
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Free</span>
+          <span className="ml-auto text-xs font-bold text-muted-foreground">$0</span>
+        </div>
+        <ul className="space-y-1.5 text-xs text-muted-foreground">
+          <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" /> Vote on battles</li>
+          <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" /> Submit 1 idea</li>
+          <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" /> Browse the leaderboard</li>
+        </ul>
+        <Link
+          href="/submit"
+          className="mt-4 flex items-center justify-center gap-1.5 rounded-full border border-border/40 px-3 py-1.5 text-xs font-bold text-muted-foreground transition-all hover:border-fire/30 hover:text-fire"
+        >
+          Start free
+          <ArrowUpRight className="h-3 w-3" />
+        </Link>
+      </div>
+    );
+  }
+
+const MIN_MEMBERS_FOR_FULL_GRID = 3;
+const PROMO_FILLERS: Array<"launch" | "pro" | "free"> = ["launch", "pro", "free"];
+
 export function PaidMemberSpotlight({
   category,
   limit = 6,
@@ -279,79 +362,16 @@ export function PaidMemberSpotlight({
   if (members.length === 0) {
     return (
       <section className={sectionClass}>
-        <div className="overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-card/40 via-card/20 to-panel/10">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fire/30 to-transparent" />
-          <div className="p-6 sm:p-8">
-            <div className="mb-6 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-fire/10 ring-1 ring-fire/20">
-                <Sparkles className="h-6 w-6 text-fire" />
-              </div>
-              <h3 className="text-lg font-black font-[family-name:var(--font-chakra)]">Claim the spotlight</h3>
-              <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
-                Featured founders get premium placement, custom CTAs, and category visibility across battle and founder pages.
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="relative overflow-hidden rounded-xl border border-fire/20 bg-gradient-to-br from-fire/5 to-card/30 p-5">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fire/50 to-transparent" />
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-fire/10">
-                    <Zap className="h-3.5 w-3.5 text-fire" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-fire">Launch Pass</span>
-                  <span className="ml-auto text-xs font-bold text-fire">$19</span>
-                </div>
-                <ul className="space-y-1.5 text-xs text-muted-foreground">
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Profile spotlight rotation</li>
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Custom CTA link on your card</li>
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" /> Premium founder profile</li>
-                </ul>
-              </div>
-
-              <div className="relative overflow-hidden rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-card/30 p-5">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-amber-400">Founder Pro</span>
-                  <span className="ml-auto text-xs font-bold text-amber-400">$12/mo</span>
-                </div>
-                <ul className="space-y-1.5 text-xs text-muted-foreground">
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Everything in Launch</li>
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Priority spotlight slots</li>
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" /> Private analytics & feedback</li>
-                </ul>
-              </div>
-
-              <div className="relative overflow-hidden rounded-xl border border-border/20 bg-gradient-to-br from-card/30 to-panel/10 p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-panel/60">
-                    <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Free</span>
-                  <span className="ml-auto text-xs font-bold text-muted-foreground">$0</span>
-                </div>
-                <ul className="space-y-1.5 text-xs text-muted-foreground">
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" /> Vote on battles</li>
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" /> Submit 1 idea</li>
-                  <li className="flex items-start gap-1.5"><BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" /> Browse the leaderboard</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Link
-                href="/pricing"
-                className="inline-flex items-center gap-1.5 rounded-full bg-fire px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-fire/90 hover:shadow-[0_0_30px_rgba(220,60,30,0.3)]"
-              >
-                See plans & get featured
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
-              <span className="text-xs text-muted-foreground">No subscription needed for Launch Pass</span>
-            </div>
-          </div>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-fire">
+          {category ? `${category} founders` : "Featured founders"}
+        </p>
+        <h2 className={`mt-1 font-[family-name:var(--font-chakra)] ${compact ? "text-base" : "text-lg"} font-black`}>
+          {title}
+        </h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <PlanCard plan="launch" />
+          <PlanCard plan="pro" />
+          <PlanCard plan="free" />
         </div>
       </section>
     );
@@ -462,6 +482,9 @@ export function PaidMemberSpotlight({
       <div className={compact ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"}>
         {members.map((member, index) => (
           <MemberCard key={`${member.id}-${member.idea_id ?? "profile"}`} member={member} category={category} position={index + 1} mode="grid" />
+        ))}
+        {members.length < MIN_MEMBERS_FOR_FULL_GRID && PROMO_FILLERS.slice(0, MIN_MEMBERS_FOR_FULL_GRID - members.length).map((plan) => (
+          <PlanCard key={plan} plan={plan} />
         ))}
       </div>
     </section>
