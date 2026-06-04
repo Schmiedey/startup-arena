@@ -9,6 +9,7 @@ import { trackClientEvent } from "@/lib/analytics-client";
 import { signinPathFor } from "@/lib/auth-redirect";
 import { LikelyrBackground } from "@/components/likelyr-background";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { HomeStats } from "@/components/home-stats";
 
 type CheckoutPlan = "launch-pass" | "founder-pro-monthly" | "founder-pro-yearly";
 const checkoutPlans: CheckoutPlan[] = ["launch-pass", "founder-pro-monthly", "founder-pro-yearly"];
@@ -199,6 +200,10 @@ export default function PricingPage() {
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
             Voting stays free so comparisons stay sharp. Pay for more submissions, founder visibility, and direct feedback.
           </p>
+
+          <div className="mt-6">
+            <HomeStats />
+          </div>
         </div>
 
         {error && (
@@ -241,6 +246,11 @@ export default function PricingPage() {
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-4xl font-black font-[family-name:var(--font-chakra)]">{plan.price}</span>
                   {plan.cadence && <span className="text-sm text-muted-foreground">{plan.cadence}</span>}
+                  {plan.id === "launch-pass" && (
+                    <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 ring-1 ring-emerald-500/20">
+                      No subscription
+                    </span>
+                  )}
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{plan.description}</p>
 
@@ -386,6 +396,34 @@ export default function PricingPage() {
                   </div>
                   <h3 className="font-bold">{step.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-16">
+          <ScrollReveal animation="reveal-up">
+            <div className="mb-8 text-center">
+              <h2 className="text-2xl font-black font-[family-name:var(--font-chakra)] sm:text-3xl">
+                common questions
+              </h2>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              { q: "Is Launch Pass really one-time?", a: "Yes. $19 once. No monthly charge, no auto-renewal. You keep all 5 idea slots and your profile forever." },
+              { q: "Can I upgrade from Launch to Pro?", a: "Yes. Founder Pro includes everything in Launch Pass plus unlimited ideas, analytics, and priority placement. You'll be charged $12/mo on top." },
+              { q: "Do free users see my spotlight card?", a: "Yes — that's the point. Your profile card rotates on battle pages and the founders page where every voter sees it." },
+              { q: "What happens if I cancel Pro?", a: "Your ideas stay, but extra Pro features pause. You revert to Launch Pass or Free tier depending on what you've purchased." },
+              { q: "How does the challenge link work?", a: "You get a unique URL for each idea. Share it anywhere — social, email, your site — and visitors land in a battle with your idea matched against a real opponent." },
+              { q: "What's a lead capture form?", a: "Voters on your founder profile can leave their email and a message. You see these leads in your dashboard and get notified." },
+            ].map((faq, i) => (
+              <ScrollReveal key={faq.q} animation="reveal-up" delay={i * 60}>
+                <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/30 via-card/15 to-background/20 p-5">
+                  <h3 className="font-bold">{faq.q}</h3>
+                  <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
                 </div>
               </ScrollReveal>
             ))}
