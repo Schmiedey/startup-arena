@@ -9,11 +9,13 @@ export type BillingPortalCustomerSource =
   | "stored_customer"
   | "email_subscription"
   | "email_customer"
-  | "created_customer";
+  | "created_customer"
+  | "no_customer";
 
 export interface BillingPortalCustomerResolution {
-  customerId: string;
+  customerId: string | null;
   source: BillingPortalCustomerSource;
+  hasCurrentSubscription: boolean;
 }
 
 interface StripePortalClient {
@@ -101,7 +103,8 @@ async function listCustomerSubscriptions(stripe: StripePortalClient, customerId:
 export async function resolveBillingPortalCustomer(
   stripe: StripePortalClient,
   user: Pick<BillingUser, "id" | "email" | "stripe_customer_id" | "stripe_subscription_id">,
-  profileName?: string | null
+  profileName?: string | null,
+  options: { createIfMissing?: boolean } = {}
 ): Promise<BillingPortalCustomerResolution> {
   let storedSubscriptionCustomerId: string | null = null;
 
@@ -109,7 +112,7 @@ export async function resolveBillingPortalCustomer(
     const subscription = await retrieveSubscriptionOrNull(stripe, user.stripe_subscription_id);
     storedSubscriptionCustomerId = subscription ? customerIdFromSubscription(subscription) : null;
     if (subscription && storedSubscriptionCustomerId && isPortalCurrentSubscription(subscription)) {
-      return { customerId: storedSubscriptionCustomerId, source: "stored_subscription" };
+      return { customerId: storedSubscriptionCustomerId, source: "stored_subscription", hasCurrentSubscription: true };
     }
   }
 
@@ -119,7 +122,7 @@ export async function resolveBillingPortalCustomer(
   if (storedCustomer) {
     const subscriptions = await listCustomerSubscriptions(stripe, storedCustomer.id);
     if (chooseCustomerWithCurrentSubscription([{ customer: storedCustomer, subscriptions }], user.id)) {
-      return { customerId: storedCustomer.id, source: "stored_customer" };
+      return { customerId: storedCustomer.id, source: "stored_customer", hasCurrentSubscription: true };
     }
   }
 
@@ -133,20 +136,24 @@ export async function resolveBillingPortalCustomer(
 
   const subscribedCustomer = chooseCustomerWithCurrentSubscription(customerMatches, user.id);
   if (subscribedCustomer) {
-    return { customerId: subscribedCustomer.id, source: "email_subscription" };
+    return { customerId: subscribedCustomer.id, source: "email_subscription", hasCurrentSubscription: true };
   }
 
   if (storedCustomer) {
-    return { customerId: storedCustomer.id, source: "stored_customer" };
+    return { customerId: storedCustomer.id, source: "stored_customer", hasCurrentSubscription: false };
   }
 
   if (storedSubscriptionCustomerId) {
-    return { customerId: storedSubscriptionCustomerId, source: "stored_subscription" };
+    return { customerId: storedSubscriptionCustomerId, source: "stored_subscription", hasCurrentSubscription: false };
   }
 
   const emailCustomer = existingCustomers.data[0];
   if (emailCustomer) {
-    return { customerId: emailCustomer.id, source: "email_customer" };
+    return { customerId: emailCustomer.id, source: "email_customer", hasCurrentSubscription: false };
+  }
+
+  if (options.createIfMissing === false) {
+    return { customerId: null, source: "no_customer", hasCurrentSubscription: false };
   }
 
   const newCustomer = await stripe.customers.create({
@@ -154,5 +161,5 @@ export async function resolveBillingPortalCustomer(
     name: profileName || undefined,
     metadata: { userId: user.id },
   });
-  return { customerId: newCustomer.id, source: "created_customer" };
+  return { customerId: newCustomer.id, source: "created_customer", hasCurrentSubscription: false };
 }

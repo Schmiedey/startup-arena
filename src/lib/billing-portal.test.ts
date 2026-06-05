@@ -82,6 +82,42 @@ describe("billing portal helpers", () => {
       stripe_subscription_id: "sub_stale",
     });
 
-    expect(resolved).toEqual({ customerId: "cus_current", source: "email_subscription" });
+    expect(resolved).toEqual({
+      customerId: "cus_current",
+      source: "email_subscription",
+      hasCurrentSubscription: true,
+    });
+  });
+
+  it("can avoid creating an empty Stripe customer when no subscription exists", async () => {
+    let created = false;
+    const stripe = {
+      customers: {
+        create: async () => {
+          created = true;
+          return { id: "cus_created" };
+        },
+        list: async () => apiList([]),
+        retrieve: async () => ({ id: "cus_stored" }),
+      },
+      subscriptions: {
+        retrieve: async () => ({ customer: "cus_stale", metadata: { userId: "user-1" }, status: "canceled" }),
+        list: async () => apiList([]),
+      },
+    };
+
+    const resolved = await resolveBillingPortalCustomer(stripe, {
+      id: "user-1",
+      email: "founder@example.com",
+      stripe_customer_id: null,
+      stripe_subscription_id: null,
+    }, null, { createIfMissing: false });
+
+    expect(created).toBe(false);
+    expect(resolved).toEqual({
+      customerId: null,
+      source: "no_customer",
+      hasCurrentSubscription: false,
+    });
   });
 });

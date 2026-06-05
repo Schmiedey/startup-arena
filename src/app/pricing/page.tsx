@@ -306,9 +306,9 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-xl border border-border/30 bg-gradient-to-br from-card/30 via-card/10 to-background/30 px-5 py-4 text-sm text-muted-foreground sm:flex-row">
-          <span>Already subscribed?</span>
+          <span>Founder Pro subscriber?</span>
           <button onClick={openBillingPortal} className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-wider text-fire transition-colors hover:text-fire/80">
-            Manage billing
+            Manage subscription
             <ExternalLink className="h-3 w-3" />
           </button>
         </div>

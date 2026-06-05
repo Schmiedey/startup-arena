@@ -72,7 +72,22 @@ export async function POST(request: Request) {
     if (!limited.ok) return rateLimitResponse(limited, "Too many billing portal requests. Try again soon.");
 
     const stripe = getStripe();
-    const customerResolution = await resolveBillingPortalCustomer(stripe, user, session.user?.name);
+    const customerResolution = await resolveBillingPortalCustomer(stripe, user, session.user?.name, {
+      createIfMissing: false,
+    });
+
+    if (!customerResolution.customerId || !customerResolution.hasCurrentSubscription) {
+      await trackEvent({
+        name: "billing_portal_unavailable",
+        userId: user.id,
+        path: new URL(request.url).pathname,
+        metadata: { plan: user.plan, customer_source: customerResolution.source },
+      });
+
+      return NextResponse.json({
+        error: "No Founder Pro subscription was found for this account. Launch Pass is a one-time purchase, so there is no subscription to manage.",
+      }, { status: 409 });
+    }
 
     if (customerResolution.customerId !== user.stripe_customer_id) {
       await sql`
