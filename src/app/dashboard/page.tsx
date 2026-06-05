@@ -47,50 +47,70 @@ export default function DashboardPage() {
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingMsg, setBillingMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const syncingRef = useRef(false);
+
+  const isCheckoutSuccess = searchParams.get("checkout") === "success";
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (status === "unauthenticated" && !isCheckoutSuccess) {
       router.replace("/signin");
     }
-  }, [router, status]);
+  }, [router, status, isCheckoutSuccess]);
 
   useEffect(() => {
-    if (searchParams.get("checkout") === "success") {
-      trackClientEvent("checkout_success_landed");
-    }
-  }, [searchParams]);
+    if (!isCheckoutSuccess) return;
+    trackClientEvent("checkout_success_landed");
+  }, [isCheckoutSuccess]);
 
   useEffect(() => {
-    const checkoutSuccess = searchParams.get("checkout") === "success";
     const email = session?.user?.email;
     const plan = session?.user?.plan ?? "free";
-    if (!email || plan === "pro") return;
+    if (!email) return;
+    if (plan === "pro") {
+      if (isCheckoutSuccess) {
+        window.history.replaceState(null, "", "/dashboard");
+      }
+      return;
+    }
 
     const syncKey = `likelyr-billing-sync:v2:${email}`;
     const lastSync = Number(window.localStorage.getItem(syncKey) ?? 0);
-    const shouldSync = checkoutSuccess || Date.now() - lastSync > 10 * 60 * 1000;
+    const shouldSync = isCheckoutSuccess || Date.now() - lastSync > 10 * 60 * 1000;
     if (!shouldSync) return;
+    if (syncingRef.current) return;
+    syncingRef.current = true;
 
     window.localStorage.setItem(syncKey, String(Date.now()));
 
-    void fetch("/api/billing/sync", { method: "POST" }).finally(() => {
-      void updateSession();
-    });
-  }, [searchParams, session?.user?.email, session?.user?.plan, updateSession]);
+    let cancelled = false;
+    (async () => {
+      try {
+        await fetch("/api/billing/sync", { method: "POST" });
+      } catch {}
+      if (!cancelled) {
+        try {
+          await updateSession();
+        } catch {}
+      }
+      syncingRef.current = false;
+    })();
+
+    return () => { cancelled = true; };
+  }, [isCheckoutSuccess, session?.user?.email, session?.user?.plan, updateSession]);
 
   useEffect(() => {
-    if (searchParams.get("checkout") !== "success") return;
+    if (!isCheckoutSuccess) return;
 
-    const timeouts = [0, 1500, 4000, 8000].map((delay) =>
+    const timeouts = [2000, 5000].map((delay) =>
       window.setTimeout(() => {
-        void updateSession();
+        updateSession().catch(() => {});
       }, delay)
     );
 
     return () => {
       timeouts.forEach(window.clearTimeout);
     };
-  }, [searchParams, updateSession]);
+  }, [isCheckoutSuccess, updateSession]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -215,10 +235,16 @@ export default function DashboardPage() {
     <div className="relative mx-auto max-w-4xl px-6 py-10">
       <LikelyrBackground className="opacity-[0.06]" />
       <div className="relative z-10">
-      {searchParams.get("checkout") === "success" && (
+      {isCheckoutSuccess && currentPlan !== "pro" && (
         <div className="mb-6 flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300 animate-slide-up">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>Your payment went through. Your plan will update here as soon as Stripe confirms it.</span>
+        </div>
+      )}
+      {isCheckoutSuccess && currentPlan === "pro" && (
+        <div className="mb-6 flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300 animate-slide-up">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>Welcome to Founder Pro! Your subscription is active.</span>
         </div>
       )}
 

@@ -2,12 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut as authSignOut } from "next-auth/react";
 import { Trophy, Plus, Home, LogOut, LayoutDashboard, Sun, Moon, Users, Shield, Menu, X, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
-import { useFormStatus } from "react-dom";
-import { signOutAction } from "@/app/auth-actions";
 import { useTheme } from "@/components/theme-provider";
 import { Avatar } from "@/components/avatar";
 import { LikelyrLogo } from "@/components/likelyr-logo";
@@ -20,17 +18,16 @@ const links = [
   { href: "/submit", label: "Submit", icon: Plus },
 ];
 
-function SignOutButton({ className, iconClassName }: { className: string; iconClassName: string }) {
-  const { pending } = useFormStatus();
-
+function SignOutButton({ className, iconClassName, onClick, disabled }: { className: string; iconClassName: string; onClick: () => void; disabled: boolean }) {
   return (
     <button
-      type="submit"
-      disabled={pending}
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
       className={className}
     >
       <LogOut className={iconClassName} />
-      {pending ? "Signing out..." : "Sign out"}
+      {disabled ? "Signing out..." : "Sign out"}
     </button>
   );
 }
@@ -84,6 +81,9 @@ export function Navbar() {
     setSigningOut(true);
     setDropdownOpen(false);
     setMobileMenuOpen(false);
+    authSignOut({ callbackUrl: "/" }).catch(() => {
+      setSigningOut(false);
+    });
   }
 
   return (
@@ -165,12 +165,12 @@ export function Navbar() {
                         Admin
                       </Link>
                     )}
-                    <form action={signOutAction} onSubmit={handleSignOut}>
-                      <SignOutButton
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-panel hover:text-foreground disabled:opacity-60"
-                        iconClassName="h-3 w-3"
-                      />
-                    </form>
+                    <SignOutButton
+                      className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-panel hover:text-foreground disabled:opacity-60"
+                      iconClassName="h-3 w-3"
+                      onClick={handleSignOut}
+                      disabled={signingOut}
+                    />
                   </div>
                 )}
               </div>
@@ -285,12 +285,12 @@ export function Navbar() {
                       Admin
                     </Link>
                   )}
-                  <form action={signOutAction} onSubmit={handleSignOut}>
-                    <SignOutButton
-                      className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-panel disabled:opacity-60"
-                      iconClassName="h-4 w-4"
-                    />
-                  </form>
+                  <SignOutButton
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-panel disabled:opacity-60"
+                    iconClassName="h-4 w-4"
+                    onClick={handleSignOut}
+                    disabled={signingOut}
+                  />
                 </div>
               ) : (
                 <Link

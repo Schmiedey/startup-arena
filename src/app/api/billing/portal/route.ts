@@ -1,10 +1,54 @@
 import { sql } from "@vercel/postgres";
 import { NextResponse } from "next/server";
+import Stripe from "stripe";
 import { auth } from "@/auth";
 import { getBillingUserByEmail } from "@/lib/billing";
 import { getStripe } from "@/lib/stripe";
 import { trackEvent } from "@/lib/analytics";
 import { rateLimit, rateLimitIdentity, rateLimitResponse } from "@/lib/rate-limit";
+
+let cachedConfigId: string | null = null;
+
+function configHasSubscriptionFeatures(config: Stripe.BillingPortal.Configuration): boolean {
+  return !!config.features.subscription_cancel?.enabled;
+}
+
+async function ensurePortalConfiguration(stripe: Stripe): Promise<string> {
+  if (cachedConfigId) return cachedConfigId;
+
+  const configs = await stripe.billingPortal.configurations.list({ active: true, limit: 100 });
+
+  const suitable = configs.data.find(configHasSubscriptionFeatures);
+  if (suitable) {
+    cachedConfigId = suitable.id;
+    return cachedConfigId;
+  }
+
+  const config = await stripe.billingPortal.configurations.create({
+    features: {
+      subscription_cancel: {
+        enabled: true,
+        mode: "at_period_end",
+        cancellation_reason: {
+          enabled: true,
+          options: ["too_expensive", "unused", "other"],
+        },
+      },
+      payment_method_update: { enabled: true },
+      customer_update: {
+        enabled: true,
+        allowed_updates: ["email", "name"],
+      },
+      invoice_history: { enabled: true },
+    },
+    business_profile: {
+      headline: "Manage your Likelyr subscription and billing",
+    },
+  });
+
+  cachedConfigId = config.id;
+  return cachedConfigId;
+}
 
 export async function POST(request: Request) {
   try {
@@ -31,7 +75,10 @@ export async function POST(request: Request) {
 
     if (!customerId) {
       const existingCustomers = await stripe.customers.list({ email: user.email, limit: 5 });
-      const activeCustomer = existingCustomers.data.find((c) => !("deleted" in c));
+      const activeCustomer = existingCustomers.data.find((c) => {
+        if ("deleted" in c && c.deleted) return false;
+        return true;
+      });
 
       if (activeCustomer) {
         customerId = activeCustomer.id;
@@ -51,8 +98,10 @@ export async function POST(request: Request) {
     }
 
     const origin = new URL(request.url).origin;
+    const configuration = await ensurePortalConfiguration(stripe);
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
+      configuration,
       return_url: `${origin}/dashboard`,
     });
 
