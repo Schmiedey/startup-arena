@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { auth } from "@/auth";
 import { getBillingUserByEmail } from "@/lib/billing";
+import { resolveBillingPortalCustomer } from "@/lib/billing-portal";
 import { getStripe } from "@/lib/stripe";
 import { trackEvent } from "@/lib/analytics";
 import { rateLimit, rateLimitIdentity, rateLimitResponse } from "@/lib/rate-limit";
@@ -71,28 +72,11 @@ export async function POST(request: Request) {
     if (!limited.ok) return rateLimitResponse(limited, "Too many billing portal requests. Try again soon.");
 
     const stripe = getStripe();
-    let customerId = user.stripe_customer_id;
+    const customerResolution = await resolveBillingPortalCustomer(stripe, user, session.user?.name);
 
-    if (!customerId) {
-      const existingCustomers = await stripe.customers.list({ email: user.email, limit: 5 });
-      const activeCustomer = existingCustomers.data.find((c) => {
-        if ("deleted" in c && c.deleted) return false;
-        return true;
-      });
-
-      if (activeCustomer) {
-        customerId = activeCustomer.id;
-      } else {
-        const newCustomer = await stripe.customers.create({
-          email: user.email,
-          name: session.user?.name || undefined,
-          metadata: { userId: user.id },
-        });
-        customerId = newCustomer.id;
-      }
-
+    if (customerResolution.customerId !== user.stripe_customer_id) {
       await sql`
-        UPDATE users SET stripe_customer_id = ${customerId}
+        UPDATE users SET stripe_customer_id = ${customerResolution.customerId}
         WHERE id = ${user.id}
       `;
     }
@@ -100,7 +84,7 @@ export async function POST(request: Request) {
     const origin = new URL(request.url).origin;
     const configuration = await ensurePortalConfiguration(stripe);
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
+      customer: customerResolution.customerId,
       configuration,
       return_url: `${origin}/dashboard`,
     });
@@ -109,7 +93,7 @@ export async function POST(request: Request) {
       name: "billing_portal_opened",
       userId: user.id,
       path: new URL(request.url).pathname,
-      metadata: { plan: user.plan, created_customer: !user.stripe_customer_id },
+      metadata: { plan: user.plan, customer_source: customerResolution.source },
     });
 
     return NextResponse.json({ url: portalSession.url });
