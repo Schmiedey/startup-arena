@@ -277,6 +277,7 @@ function PlanCard({ plan }: { plan: "launch" | "pro" | "free" }) {
 
 const MIN_MEMBERS_FOR_FULL_GRID = 3;
 const PROMO_FILLERS: Array<"launch" | "pro" | "free"> = ["launch", "pro", "free"];
+const AUTO_SLIDE_MS = 3500;
 
 export function PaidMemberSpotlight({
   category,
@@ -332,12 +333,12 @@ export function PaidMemberSpotlight({
   useEffect(() => {
     if (variant !== "carousel" || paused || slideCount < 2) return;
 
-    const timer = window.setInterval(() => {
+    const timer = window.setTimeout(() => {
       setActiveIndex((current) => (current + 1) % slideCount);
-    }, 6000);
+    }, AUTO_SLIDE_MS);
 
-    return () => window.clearInterval(timer);
-  }, [paused, slideCount, variant]);
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, paused, slideCount, variant]);
 
   const goToSlide = (nextIndex: number) => {
     if (slideCount === 0) return;
@@ -431,7 +432,7 @@ export function PaidMemberSpotlight({
         </div>
 
         {slideCount > 1 && (
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-1.5">
               {members.map((_, index) => (
                 <button
@@ -446,6 +447,13 @@ export function PaidMemberSpotlight({
                   aria-label={`Show slide ${index + 1}`}
                 />
               ))}
+            </div>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-border/35 sm:max-w-[180px]">
+              <div
+                key={`spotlight-progress-${activeIndex}`}
+                className="h-full origin-left bg-fire animate-spotlight-progress"
+                style={{ animationPlayState: paused ? "paused" : "running" }}
+              />
             </div>
             <Link
               href="/founders"

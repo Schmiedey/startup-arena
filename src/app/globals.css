@@ -245,6 +245,11 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes spotlight-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
 @keyframes glow-pulse {
   0%, 100% { box-shadow: 0 0 20px oklch(0.62 0.22 25 / 0.3); }
   50% { box-shadow: 0 0 40px oklch(0.62 0.22 25 / 0.6); }
@@ -355,6 +360,10 @@
 
 .animate-slide-in-right {
   animation: slide-in-right 0.4s ease-out both;
+}
+
+.animate-spotlight-progress {
+  animation: spotlight-progress 3.5s linear both;
 }
 
 .animate-glow-pulse {

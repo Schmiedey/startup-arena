@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Share2, Swords, Trophy, MessageCircle, Target } from "lucide-react";
+import { ArrowUpRight, BarChart3, Crown, Share2, Sparkles, Swords, Trophy, MessageCircle, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Idea } from "@/lib/types";
 import { battlePath } from "@/lib/seo";
+import { trackClientEvent } from "@/lib/analytics-client";
 
 interface BattleResultCardProps {
   winner: Idea;
@@ -25,6 +26,70 @@ interface BattleResultCardProps {
   onShare: () => void;
   onNext?: () => void;
   onReason?: (reason: string) => Promise<void>;
+  viewerPlan?: "free" | "launch" | "pro";
+}
+
+function ResultUpgradePrompt({ viewerPlan = "free" }: { viewerPlan?: "free" | "launch" | "pro" }) {
+  if (viewerPlan === "pro") return null;
+
+  const isLaunch = viewerPlan === "launch";
+  const href = isLaunch ? "/pricing?checkout=founder-pro-monthly" : "/pricing?checkout=launch-pass";
+  const eventPlan = isLaunch ? "founder-pro-monthly" : "launch-pass";
+
+  return (
+    <div className="border-t border-fire/15 bg-gradient-to-r from-fire/10 via-background/70 to-amber-400/10 px-5 py-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-fire">
+            {isLaunch ? <Sparkles className="h-3 w-3" /> : <Crown className="h-3 w-3" />}
+            {isLaunch ? "Founder Pro unlock" : "Launch Pass unlock"}
+          </div>
+          <p className="text-sm font-bold">
+            {isLaunch ? "Run targeted tests in the exact categories you care about." : "Put your own idea into battles voters already understand."}
+          </p>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            {isLaunch
+              ? "Get category battle targeting, priority spotlight placement, full analytics, and weekly digest exposure."
+              : "Get 5 idea slots, founder spotlight rotation, profile CTAs, lead capture, and challenge links for one payment."}
+          </p>
+        </div>
+        <Link
+          href={href}
+          onClick={() => trackClientEvent("battle_result_upgrade_clicked", { plan: eventPlan })}
+          className={`inline-flex shrink-0 items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+            isLaunch
+              ? "border border-amber-400/35 bg-amber-400/10 text-amber-300 hover:bg-amber-400/15"
+              : "bg-fire text-fire-foreground hover:bg-fire/90"
+          }`}
+        >
+          {isLaunch ? "Upgrade to Pro" : "Get Launch Pass"}
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+      <div className="mt-3 grid gap-px overflow-hidden border border-border/20 bg-border/20 sm:grid-cols-3">
+        {(isLaunch
+          ? [
+              ["Target", "Pick category battles"],
+              ["Priority", "Show before Launch"],
+              ["Analytics", "See views, votes, leads"],
+            ]
+          : [
+              ["Spotlight", "Appear below battles"],
+              ["Leads", "Capture interested voters"],
+              ["Links", "Share direct challenges"],
+            ]
+        ).map(([label, detail]) => (
+          <div key={label} className="bg-background/75 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-fire">
+              <BarChart3 className="h-3 w-3" />
+              {label}
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function BattleResultCard({
@@ -38,6 +103,7 @@ export function BattleResultCard({
   onShare,
   onNext,
   onReason,
+  viewerPlan = "free",
 }: BattleResultCardProps) {
   const [reason, setReason] = useState("");
   const [reasonSubmitted, setReasonSubmitted] = useState(false);
@@ -167,6 +233,8 @@ export function BattleResultCard({
           </p>
         </div>
       )}
+
+      <ResultUpgradePrompt viewerPlan={viewerPlan} />
 
       <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">

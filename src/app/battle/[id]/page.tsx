@@ -25,6 +25,8 @@ interface VoteResult {
   loserDelta: number;
 }
 
+type ViewerPlan = "free" | "launch" | "pro";
+
 function fetchComments(ideaId: string): Promise<Comment[]> {
   return fetch(`/api/comments?idea_id=${ideaId}`)
     .then((r) => r.json())
@@ -193,6 +195,7 @@ export default function SharedBattlePage() {
 
   const winnerIdea = winner === battle.idea_a.id ? battle.idea_a : winner === battle.idea_b.id ? battle.idea_b : null;
   const loserIdea = loser === battle.idea_a.id ? battle.idea_a : loser === battle.idea_b.id ? battle.idea_b : null;
+  const viewerPlan: ViewerPlan = session?.user?.plan ?? "free";
 
   return (
     <div className="relative mx-auto max-w-5xl px-4 py-6 sm:py-10">
@@ -261,6 +264,7 @@ export default function SharedBattlePage() {
           loserDelta={result.loserDelta}
           shared={shared}
           onShare={handleShare}
+          viewerPlan={viewerPlan}
         />
       )}
 
