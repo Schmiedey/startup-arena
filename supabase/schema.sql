@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS users (
   profile_show_contact BOOLEAN DEFAULT TRUE,
   profile_weekly_digest_opt_in BOOLEAN DEFAULT TRUE,
   profile_featured_category TEXT,
+  email_marketing_enabled BOOLEAN DEFAULT TRUE,
+  email_weekly_enabled BOOLEAN DEFAULT TRUE,
+  email_product_enabled BOOLEAN DEFAULT TRUE,
+  email_unsubscribed_at TIMESTAMPTZ,
+  last_email_sent_at TIMESTAMPTZ,
   email_verified_at TIMESTAMPTZ,
   prediction_elo INTEGER DEFAULT 1000,
   prediction_wins INTEGER DEFAULT 0,
@@ -56,6 +61,11 @@ DO $$ BEGIN
   ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_show_contact BOOLEAN DEFAULT TRUE;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_weekly_digest_opt_in BOOLEAN DEFAULT TRUE;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_featured_category TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_marketing_enabled BOOLEAN DEFAULT TRUE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_enabled BOOLEAN DEFAULT TRUE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_product_enabled BOOLEAN DEFAULT TRUE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_unsubscribed_at TIMESTAMPTZ;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS last_email_sent_at TIMESTAMPTZ;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_elo INTEGER DEFAULT 1000;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS prediction_wins INTEGER DEFAULT 0;
@@ -205,6 +215,52 @@ CREATE TABLE IF NOT EXISTS idea_score_history (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS email_automations (
+  key TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  segment_key TEXT NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  frequency TEXT NOT NULL DEFAULT 'weekly' CHECK (frequency IN ('weekly')),
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  cta_label TEXT,
+  cta_url TEXT,
+  last_run_at TIMESTAMPTZ,
+  updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS email_campaigns (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  segment_key TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  cta_label TEXT,
+  cta_url TEXT,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sending', 'sent', 'failed')),
+  recipient_count INTEGER NOT NULL DEFAULT 0,
+  sent_count INTEGER NOT NULL DEFAULT 0,
+  failed_count INTEGER NOT NULL DEFAULT 0,
+  error TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  sent_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS email_deliveries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id UUID REFERENCES email_campaigns(id) ON DELETE CASCADE,
+  automation_key TEXT REFERENCES email_automations(key) ON DELETE SET NULL,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'skipped')),
+  error TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  sent_at TIMESTAMPTZ
+);
+
 -- Add flag_count column if it doesn't exist (for existing deployments)
 DO $$ BEGIN
   ALTER TABLE comments ADD COLUMN IF NOT EXISTS flag_count INTEGER DEFAULT 0;
@@ -231,4 +287,7 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_metadata_gin ON analytics_events
 CREATE INDEX IF NOT EXISTS idx_founder_updates_user_created_at ON founder_updates(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_founder_leads_founder_created_at ON founder_leads(founder_user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_idea_score_history_idea_created_at ON idea_score_history(idea_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_campaigns_created_at ON email_campaigns(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_deliveries_user_sent_at ON email_deliveries(user_id, sent_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_deliveries_automation_sent_at ON email_deliveries(automation_key, sent_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS votes_battle_user_unique ON votes(battle_id, user_id);

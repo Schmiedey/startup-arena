@@ -89,8 +89,8 @@ export async function GET(request: Request) {
           WHERE pu.effective_plan <> 'free'
             AND (featured.id IS NOT NULL OR pu.profile_featured_category = ${category})
           ORDER BY
-            last_seen.last_impression_at ASC NULLS FIRST,
             CASE WHEN pu.effective_plan = 'pro' THEN 0 ELSE 1 END,
+            last_seen.last_impression_at ASC NULLS FIRST,
             RANDOM()
           LIMIT ${limit}
         `
@@ -158,8 +158,8 @@ export async function GET(request: Request) {
           ) last_seen ON TRUE
           WHERE pu.effective_plan <> 'free'
           ORDER BY
-            last_seen.last_impression_at ASC NULLS FIRST,
             CASE WHEN pu.effective_plan = 'pro' THEN 0 ELSE 1 END,
+            last_seen.last_impression_at ASC NULLS FIRST,
             RANDOM()
           LIMIT ${limit}
         `;

@@ -1,7 +1,8 @@
 import type Stripe from "stripe";
-import { CHECKOUT_PLANS, type CheckoutPlan, type BillingUser } from "@/lib/billing";
+import { CHECKOUT_PLANS, hasLaunchAccess, type CheckoutPlan, type BillingUser } from "@/lib/billing";
 
 type CheckoutUser = Pick<BillingUser, "id" | "email" | "stripe_customer_id">;
+type CheckoutAccessUser = Pick<BillingUser, "plan" | "launch_pass_purchased_at">;
 
 export function checkoutSessionParams(plan: CheckoutPlan, user: CheckoutUser, origin: string): Stripe.Checkout.SessionCreateParams {
   const checkoutPlan = CHECKOUT_PLANS[plan];
@@ -72,6 +73,17 @@ export function checkoutErrorMessage(error: unknown) {
   }
 
   return "Could not start checkout. Try again soon.";
+}
+
+export function blockedCheckoutMessage(plan: CheckoutPlan, user: CheckoutAccessUser) {
+  if (plan === "launch-pass" && (hasLaunchAccess(user.plan) || user.launch_pass_purchased_at)) {
+    return "Launch Pass is already purchased on this account.";
+  }
+  if ((plan === "founder-pro-monthly" || plan === "founder-pro-yearly") && user.plan === "pro") {
+    return "You are already subscribed to Founder Pro.";
+  }
+
+  return null;
 }
 
 export function logCheckoutError(error: unknown, metadata: Record<string, unknown>) {

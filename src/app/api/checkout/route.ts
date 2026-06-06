@@ -5,6 +5,7 @@ import { getStripe } from "@/lib/stripe";
 import { trackEvent } from "@/lib/analytics";
 import { rateLimit, rateLimitIdentity, rateLimitResponse } from "@/lib/rate-limit";
 import {
+  blockedCheckoutMessage,
   checkoutErrorMessage,
   checkoutSessionParams,
   checkoutSessionParamsWithoutCustomer,
@@ -31,6 +32,11 @@ export async function POST(request: Request) {
     const user = await getBillingUserByEmail(session.user.email);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const blockedMessage = blockedCheckoutMessage(plan, user);
+    if (blockedMessage) {
+      return NextResponse.json({ error: blockedMessage, plan: user.plan }, { status: 409 });
     }
 
     const limited = await rateLimit(request, {

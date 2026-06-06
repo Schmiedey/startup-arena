@@ -12,6 +12,7 @@ import { ScrollReveal } from "@/components/scroll-reveal";
 import { HomeStats } from "@/components/home-stats";
 
 type CheckoutPlan = "launch-pass" | "founder-pro-monthly" | "founder-pro-yearly";
+type BillingPlan = "free" | "launch" | "pro";
 const checkoutPlans: CheckoutPlan[] = ["launch-pass", "founder-pro-monthly", "founder-pro-yearly"];
 
 async function readJsonResponse(res: Response): Promise<Record<string, unknown>> {
@@ -126,8 +127,22 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<CheckoutPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [userPlan, setUserPlan] = useState<BillingPlan | null>(null);
+  const [planLoaded, setPlanLoaded] = useState(false);
+
+  const ownsLaunchPass = userPlan === "launch" || userPlan === "pro";
+  const ownsFounderPro = userPlan === "pro";
 
   const startCheckout = useCallback(async (plan: CheckoutPlan) => {
+    if (plan === "launch-pass" && ownsLaunchPass) {
+      setError("Launch Pass is already purchased on this account.");
+      return;
+    }
+    if ((plan === "founder-pro-monthly" || plan === "founder-pro-yearly") && ownsFounderPro) {
+      setError("You are already subscribed to Founder Pro.");
+      return;
+    }
+
     setLoadingPlan(plan);
     setError(null);
     trackClientEvent("checkout_cta_clicked", { plan });
@@ -145,6 +160,12 @@ export default function PricingPage() {
         router.push(signinPathFor(`/pricing?checkout=${plan}`, window.location.origin));
         return;
       }
+      if (res.status === 409 && plan === "launch-pass") {
+        setUserPlan("launch");
+      }
+      if (res.status === 409 && (plan === "founder-pro-monthly" || plan === "founder-pro-yearly")) {
+        setUserPlan("pro");
+      }
       if (!res.ok || typeof data.url !== "string") {
         throw new Error(typeof data.error === "string" ? data.error : "Could not start checkout");
       }
@@ -156,15 +177,40 @@ export default function PricingPage() {
     } finally {
       setLoadingPlan(null);
     }
-  }, [router]);
+  }, [ownsFounderPro, ownsLaunchPass, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPlan() {
+      try {
+        const res = await fetch("/api/me");
+        const data = await readJsonResponse(res);
+        const maybeUser = data.user as { plan?: unknown } | null | undefined;
+        const plan = maybeUser?.plan;
+
+        if (!cancelled && (plan === "free" || plan === "launch" || plan === "pro")) {
+          setUserPlan(plan);
+        }
+      } finally {
+        if (!cancelled) setPlanLoaded(true);
+      }
+    }
+
+    void loadPlan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const checkoutPlan = searchParams.get("checkout");
-    if (checkoutStartedFromUrl.current || !isCheckoutPlan(checkoutPlan)) return;
+    if (!planLoaded || checkoutStartedFromUrl.current || !isCheckoutPlan(checkoutPlan)) return;
 
     checkoutStartedFromUrl.current = true;
     void startCheckout(checkoutPlan);
-  }, [searchParams, startCheckout]);
+  }, [planLoaded, searchParams, startCheckout]);
 
   async function openBillingPortal() {
     setError(null);
@@ -218,6 +264,8 @@ export default function PricingPage() {
             const href = "href" in plan ? plan.href : null;
             const checkoutPlan = "checkoutPlan" in plan ? plan.checkoutPlan : null;
             const secondaryCheckoutPlan = "secondaryCheckoutPlan" in plan ? plan.secondaryCheckoutPlan : null;
+            const isOwnedLaunchPlan = plan.id === "launch-pass" && ownsLaunchPass;
+            const isOwnedProPlan = plan.id === "founder-pro" && ownsFounderPro;
             return (
               <div
                 key={plan.id}
@@ -237,7 +285,12 @@ export default function PricingPage() {
                   </div>
                   {plan.featured && (
                     <span className="rounded-full bg-fire/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-fire ring-1 ring-fire/20">
-                      Best first buy
+                      {isOwnedLaunchPlan ? "Purchased" : "Best first buy"}
+                    </span>
+                  )}
+                  {isOwnedProPlan && (
+                    <span className="rounded-full bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400 ring-1 ring-amber-400/20">
+                      Subscribed
                     </span>
                   )}
                 </div>
@@ -279,16 +332,16 @@ export default function PricingPage() {
                     <div className="space-y-2">
                       <Button
                         onClick={() => startCheckout(checkoutPlan)}
-                        disabled={loadingPlan !== null}
+                        disabled={loadingPlan !== null || isOwnedLaunchPlan || isOwnedProPlan}
                         className={`w-full rounded-xl h-11 ${plan.featured ? "btn-fire bg-fire text-fire-foreground hover:bg-fire/90" : ""}`}
                         variant={plan.featured ? "default" : "outline"}
                       >
                         {loadingPlan === checkoutPlan ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
-                        {plan.cta}
+                        {isOwnedLaunchPlan ? "Already purchased" : isOwnedProPlan ? "Already subscribed" : plan.cta}
                       </Button>
-                      {secondaryCheckoutPlan && (
+                      {secondaryCheckoutPlan && !isOwnedProPlan && (
                         <button
                           onClick={() => startCheckout(secondaryCheckoutPlan)}
                           disabled={loadingPlan !== null}

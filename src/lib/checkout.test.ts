@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  blockedCheckoutMessage,
   checkoutErrorMessage,
   checkoutSessionParams,
   checkoutSessionParamsWithoutCustomer,
@@ -63,5 +64,39 @@ describe("checkout helpers", () => {
   it("returns a setup message for Stripe configuration errors", () => {
     expect(checkoutErrorMessage(new Error("STRIPE_SECRET_KEY is not configured"))).toBe("Stripe checkout is not configured yet.");
     expect(checkoutErrorMessage({ type: "StripeAuthenticationError" })).toBe("Stripe checkout is not configured yet.");
+  });
+
+  it("blocks duplicate Launch Pass checkout for existing paid access", () => {
+    expect(blockedCheckoutMessage("launch-pass", {
+      plan: "launch",
+      launch_pass_purchased_at: "2026-06-05T17:35:12Z",
+    })).toBe("Launch Pass is already purchased on this account.");
+
+    expect(blockedCheckoutMessage("launch-pass", {
+      plan: "pro",
+      launch_pass_purchased_at: null,
+    })).toBe("Launch Pass is already purchased on this account.");
+
+    expect(blockedCheckoutMessage("founder-pro-monthly", {
+      plan: "launch",
+      launch_pass_purchased_at: "2026-06-05T17:35:12Z",
+    })).toBeNull();
+  });
+
+  it("blocks duplicate Founder Pro checkout for active Pro users", () => {
+    expect(blockedCheckoutMessage("founder-pro-monthly", {
+      plan: "pro",
+      launch_pass_purchased_at: null,
+    })).toBe("You are already subscribed to Founder Pro.");
+
+    expect(blockedCheckoutMessage("founder-pro-yearly", {
+      plan: "pro",
+      launch_pass_purchased_at: "2026-06-05T17:35:12Z",
+    })).toBe("You are already subscribed to Founder Pro.");
+
+    expect(blockedCheckoutMessage("founder-pro-yearly", {
+      plan: "launch",
+      launch_pass_purchased_at: "2026-06-05T17:35:12Z",
+    })).toBeNull();
   });
 });
