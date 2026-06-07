@@ -45,13 +45,9 @@ export async function GET() {
         GROUP BY user_id
       ) v_stats ON u.id = v_stats.user_id
       WHERE
-        (
-          COALESCE(u.is_bot, false) = true
-          OR u.launch_pass_purchased_at IS NOT NULL
-          OR u.plan = 'launch'
-          OR (u.plan = 'pro' AND u.subscription_status IN ('active', 'trialing'))
-        )
-        AND (i_stats.ideas_count IS NOT NULL OR v_stats.votes_cast IS NOT NULL)
+        COALESCE(u.is_bot, false) = false
+        AND COALESCE(u.is_admin, false) = false
+        AND COALESCE(i_stats.ideas_count, 0) > 0
       ORDER BY karma DESC NULLS LAST
       LIMIT 50
     `;

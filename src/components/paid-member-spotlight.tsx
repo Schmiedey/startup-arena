@@ -65,10 +65,14 @@ function MemberCard({
   position: number;
   mode?: "carousel" | "grid";
 }) {
-  const name = member.name || "Anonymous founder";
-  const profileHref = founderPath({ id: member.id, name: member.name });
+  if (!member.idea_name) return null;
+
+  const founderName = member.name || "Anonymous founder";
+  const ideaName = member.idea_name;
+  const showFounderName = founderName.toLowerCase() !== ideaName.toLowerCase();
+  const profileHref = founderPath({ id: member.id, name: ideaName });
   const displayCategory = member.idea_category || member.profile_featured_category;
-  const headline = member.profile_headline || member.idea_pitch || "Building something great";
+  const headline = member.idea_pitch || member.profile_headline || "Building something great";
   const winRate = getWinRate(member);
   const isCarousel = mode === "carousel";
   const categoryClass = displayCategory
@@ -98,7 +102,7 @@ function MemberCard({
 
         <div className="flex items-start gap-4">
           <div className="relative shrink-0">
-            <Avatar src={member.image} name={name} size={isCarousel ? 56 : 48} />
+            <Avatar src={member.image} name={ideaName} size={isCarousel ? 56 : 48} />
             {isPro && (
               <div className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-fire text-white shadow-lg shadow-fire/30">
                 <Sparkles className="h-3 w-3" />
@@ -109,7 +113,7 @@ function MemberCard({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-bold leading-tight text-foreground group-hover:text-fire transition-colors">
-                {name}
+                {ideaName}
               </h3>
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
@@ -132,9 +136,9 @@ function MemberCard({
               </span>
             </div>
 
-            {member.idea_name && (
+            {showFounderName && (
               <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {member.idea_name}
+                by {founderName}
               </p>
             )}
 
@@ -304,7 +308,7 @@ export function PaidMemberSpotlight({
         return res.json() as Promise<FeaturedMember[]>;
       })
       .then((nextMembers) => {
-        setMembers(nextMembers);
+        setMembers(nextMembers.filter((member) => member.idea_id && member.idea_name));
         setActiveIndex(0);
       })
       .catch(() => {

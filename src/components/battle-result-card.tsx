@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, BarChart3, Crown, Share2, Sparkles, Swords, Trophy, MessageCircle, Target } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Crown, Share2, Sparkles, Swords, Trophy, MessageCircle, Target, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Idea } from "@/lib/types";
 import { battlePath } from "@/lib/seo";
 import { trackClientEvent } from "@/lib/analytics-client";
+import { useDismissiblePrompt } from "@/lib/use-dismissible-prompt";
 
 interface BattleResultCardProps {
   winner: Idea;
@@ -21,72 +22,89 @@ interface BattleResultCardProps {
     eloAfter: number;
     eloDelta: number;
     streak: number;
+    community?: {
+      ideaAId: string;
+      ideaBId: string;
+      ideaAVotes: number;
+      ideaBVotes: number;
+      totalVotes: number;
+      leaderId: string | null;
+      targetIdBeforeVote: string | null;
+    };
   };
   shared: boolean;
   onShare: () => void;
   onNext?: () => void;
   onReason?: (reason: string) => Promise<void>;
   viewerPlan?: "free" | "launch" | "pro";
+  viewerKey?: string;
 }
 
-function ResultUpgradePrompt({ viewerPlan = "free" }: { viewerPlan?: "free" | "launch" | "pro" }) {
-  if (viewerPlan === "pro") return null;
-
+function ResultUpgradePrompt({ viewerPlan = "free", viewerKey = "guest" }: { viewerPlan?: "free" | "launch" | "pro"; viewerKey?: string }) {
+  const prompt = useDismissiblePrompt(`likelyr-upgrade-prompt:v1:result:${viewerPlan}:${viewerKey}`);
   const isLaunch = viewerPlan === "launch";
-  const href = isLaunch ? "/pricing?checkout=founder-pro-monthly" : "/pricing?checkout=launch-pass";
+  const href = isLaunch ? "/pricing" : "/pricing?checkout=launch-pass";
   const eventPlan = isLaunch ? "founder-pro-monthly" : "launch-pass";
+  const points = isLaunch
+    ? ["Category battles", "Priority placement", "Private analytics"]
+    : ["5 idea slots", "Spotlight rotation", "Lead capture"];
+
+  if (viewerPlan === "pro" || !prompt.visible) return null;
 
   return (
-    <div className="border-t border-fire/15 bg-gradient-to-r from-fire/10 via-background/70 to-amber-400/10 px-5 py-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="relative border-t border-border/35 bg-card/30 px-5 py-4">
+      <button
+        type="button"
+        onClick={() => {
+          prompt.dismiss();
+          trackClientEvent("battle_upgrade_dismissed", {
+            cooldown_days: prompt.cooldownDays,
+            placement: "result",
+            plan: eventPlan,
+          });
+        }}
+        className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        aria-label={`Hide subscription suggestion for ${prompt.cooldownDays} days`}
+        title={`Hide for ${prompt.cooldownDays} days`}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+
+      <div className="flex flex-col gap-3 pr-7 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-fire">
             {isLaunch ? <Sparkles className="h-3 w-3" /> : <Crown className="h-3 w-3" />}
-            {isLaunch ? "Founder Pro unlock" : "Launch Pass unlock"}
+            {isLaunch ? "Founder Pro" : "Launch Pass"}
           </div>
-          <p className="text-sm font-bold">
-            {isLaunch ? "Run targeted tests in the exact categories you care about." : "Put your own idea into battles voters already understand."}
+          <p className="text-sm font-bold leading-snug">
+            {isLaunch ? "Want this signal by category?" : "Want voters judging your idea next?"}
           </p>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
             {isLaunch
-              ? "Get category battle targeting, priority spotlight placement, full analytics, and weekly digest exposure."
-              : "Get 5 idea slots, founder spotlight rotation, profile CTAs, lead capture, and challenge links for one payment."}
+              ? "Pro adds targeted battles, priority placement, and private analytics for founder decisions."
+              : "Launch Pass adds idea slots, spotlight rotation, lead capture, and direct challenge links."}
           </p>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+            {points.map((point) => (
+              <span key={point} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <CheckCircle2 className="h-3 w-3 text-fire" />
+                {point}
+              </span>
+            ))}
+          </div>
         </div>
         <Link
           href={href}
           onClick={() => trackClientEvent("battle_result_upgrade_clicked", { plan: eventPlan })}
           className={`inline-flex shrink-0 items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
             isLaunch
-              ? "border border-amber-400/35 bg-amber-400/10 text-amber-300 hover:bg-amber-400/15"
+              ? "border border-fire/45 text-fire hover:bg-fire/10"
               : "bg-fire text-fire-foreground hover:bg-fire/90"
           }`}
         >
           {isLaunch ? "Upgrade to Pro" : "Get Launch Pass"}
           <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
-      </div>
-      <div className="mt-3 grid gap-px overflow-hidden border border-border/20 bg-border/20 sm:grid-cols-3">
-        {(isLaunch
-          ? [
-              ["Target", "Pick category battles"],
-              ["Priority", "Show before Launch"],
-              ["Analytics", "See views, votes, leads"],
-            ]
-          : [
-              ["Spotlight", "Appear below battles"],
-              ["Leads", "Capture interested voters"],
-              ["Links", "Share direct challenges"],
-            ]
-        ).map(([label, detail]) => (
-          <div key={label} className="bg-background/75 px-3 py-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-fire">
-              <BarChart3 className="h-3 w-3" />
-              {label}
-            </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -104,10 +122,28 @@ export function BattleResultCard({
   onNext,
   onReason,
   viewerPlan = "free",
+  viewerKey = "guest",
 }: BattleResultCardProps) {
   const [reason, setReason] = useState("");
   const [reasonSubmitted, setReasonSubmitted] = useState(false);
   const [reasonSubmitting, setReasonSubmitting] = useState(false);
+  const community = prediction?.community;
+  const winnerCommunityVotes = community
+    ? winner.id === community.ideaAId
+      ? community.ideaAVotes
+      : community.ideaBVotes
+    : null;
+  const loserCommunityVotes = community
+    ? loser.id === community.ideaAId
+      ? community.ideaAVotes
+      : community.ideaBVotes
+    : null;
+  const winnerCommunityShare = community && winnerCommunityVotes !== null && community.totalVotes > 0
+    ? Math.round((winnerCommunityVotes / community.totalVotes) * 100)
+    : null;
+  const loserCommunityShare = community && loserCommunityVotes !== null && community.totalVotes > 0
+    ? Math.round((loserCommunityVotes / community.totalVotes) * 100)
+    : null;
 
   async function submitReason() {
     if (!reason.trim() || !onReason) return;
@@ -130,7 +166,7 @@ export function BattleResultCard({
           {winner.name} beat {loser.name}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Likelyr picked the idea with the clearer path to making money.
+          Your pick gained SaaS Elo from this head-to-head vote.
         </p>
       </div>
 
@@ -160,11 +196,24 @@ export function BattleResultCard({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">
                 {!prediction.ranked
-                  ? "Provisional guess."
+                  ? "Provisional guess: the community was tied before your vote."
                   : prediction.correct
-                    ? "You matched the crowd signal."
-                    : "You went against the crowd signal."}
+                    ? "You guessed with the community majority."
+                    : "You guessed against the community majority."}
               </p>
+              {community && (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Community now:{" "}
+                  <span className="font-mono text-foreground">
+                    {winnerCommunityShare ?? 0}%
+                  </span>{" "}
+                  {winner.name} /{" "}
+                  <span className="font-mono text-foreground">
+                    {loserCommunityShare ?? 0}%
+                  </span>{" "}
+                  {loser.name}
+                </p>
+              )}
               {prediction.ranked ? (
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Predictor Elo:{" "}
@@ -177,7 +226,7 @@ export function BattleResultCard({
                 </p>
               ) : (
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  This matchup needs more prior signal before it affects your predictor Elo.
+                  Once the community has a clear pre-vote lean, matching it raises your predictor Elo and missing it lowers your score.
                 </p>
               )}
             </div>
@@ -234,7 +283,7 @@ export function BattleResultCard({
         </div>
       )}
 
-      <ResultUpgradePrompt viewerPlan={viewerPlan} />
+      <ResultUpgradePrompt viewerPlan={viewerPlan} viewerKey={viewerKey} />
 
       <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">

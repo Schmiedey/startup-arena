@@ -8,13 +8,14 @@ import { BattleCard } from "@/components/battle-card";
 import { CommentSection } from "@/components/comment-section";
 import { CATEGORIES, Idea, Comment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, BarChart3, Crown, Loader2, LockKeyhole, MessageSquare, RefreshCw, Share2, Sparkles, Target, Zap, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Crown, Loader2, LockKeyhole, MessageSquare, RefreshCw, Share2, Sparkles, X } from "lucide-react";
 import { LikelyrLogo } from "@/components/likelyr-logo";
 import { LikelyrBackground } from "@/components/likelyr-background";
 import { BattleResultCard } from "@/components/battle-result-card";
 import { trackClientEvent } from "@/lib/analytics-client";
 import { battlePath } from "@/lib/seo";
 import { PaidMemberSpotlight } from "@/components/paid-member-spotlight";
+import { useDismissiblePrompt } from "@/lib/use-dismissible-prompt";
 
 interface BattleData {
   idea_a: Idea;
@@ -32,79 +33,84 @@ interface VoteResult {
     eloAfter: number;
     eloDelta: number;
     streak: number;
+    community?: {
+      ideaAId: string;
+      ideaBId: string;
+      ideaAVotes: number;
+      ideaBVotes: number;
+      totalVotes: number;
+      leaderId: string | null;
+      targetIdBeforeVote: string | null;
+    };
   };
 }
 
 type ViewerPlan = "free" | "launch" | "pro";
 
-function BattleUpgradeStrip({ plan }: { plan: ViewerPlan }) {
-  if (plan === "pro") return null;
-
+function BattleUpgradeStrip({ plan, viewerKey }: { plan: ViewerPlan; viewerKey: string }) {
+  const prompt = useDismissiblePrompt(`likelyr-upgrade-prompt:v1:battle:${plan}:${viewerKey}`);
   const isLaunch = plan === "launch";
-  const href = isLaunch ? "/pricing?checkout=founder-pro-monthly" : "/pricing?checkout=launch-pass";
+  const href = isLaunch ? "/pricing" : "/pricing?checkout=launch-pass";
   const eventPlan = isLaunch ? "founder-pro-monthly" : "launch-pass";
-  const benefits: Array<{ icon: LucideIcon; label: string; detail: string }> = isLaunch
-    ? [
-        { icon: Target, label: "Target", detail: "Pick battle category" },
-        { icon: Zap, label: "Priority", detail: "Show before Launch" },
-        { icon: BarChart3, label: "Analytics", detail: "See what converts" },
-      ]
-    : [
-        { icon: Crown, label: "Spotlight", detail: "Rotate below battles" },
-        { icon: Target, label: "Challenges", detail: "Share direct links" },
-        { icon: BarChart3, label: "Leads", detail: "Capture interest" },
-      ];
+  const points = isLaunch
+    ? ["Category targeting", "Priority placement", "Private analytics"]
+    : ["5 idea slots", "Spotlight rotation", "Lead capture"];
+
+  if (plan === "pro" || !prompt.visible) return null;
 
   return (
-    <div className="mb-6 overflow-hidden border border-fire/25 bg-gradient-to-r from-fire/10 via-card/25 to-amber-400/10">
-      <div className="grid gap-px bg-border/20 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="bg-background/75 px-4 py-4 sm:px-5">
+    <section className="relative mb-5 border border-border/50 bg-card/35 px-4 py-4 sm:px-5" aria-label="Subscription suggestion">
+      <button
+        type="button"
+        onClick={() => {
+          prompt.dismiss();
+          trackClientEvent("battle_upgrade_dismissed", {
+            cooldown_days: prompt.cooldownDays,
+            placement: "pre_battle",
+            plan: eventPlan,
+          });
+        }}
+        className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        aria-label={`Hide subscription suggestion for ${prompt.cooldownDays} days`}
+        title={`Hide for ${prompt.cooldownDays} days`}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+
+      <div className="flex flex-col gap-3 pr-7 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <div className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-fire">
             {isLaunch ? <Sparkles className="h-3 w-3" /> : <Crown className="h-3 w-3" />}
-            {isLaunch ? "Founder Pro" : "Get seen in this arena"}
+            {isLaunch ? "Founder Pro" : "Launch Pass"}
           </div>
-          <h2 className="text-base font-black leading-tight sm:text-lg">
-            {isLaunch ? "Turn broad votes into targeted category tests." : "Want voters comparing your idea here next?"}
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            {isLaunch
-              ? "Upgrade for category battle targeting, priority spotlight placement, analytics, founder updates, and weekly digest exposure."
-              : "Launch Pass puts up to 5 ideas into the arena with founder spotlight rotation, profile CTAs, leads, and challenge links."}
+          <p className="text-sm font-bold leading-snug">
+            {isLaunch ? "Category battles are a Pro feature." : "Ready to put your idea into the vote flow?"}
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href={href}
-              onClick={() => trackClientEvent("battle_upgrade_cta_clicked", { placement: "pre_battle", plan: eventPlan })}
-              className="inline-flex items-center justify-center gap-1.5 bg-fire px-4 py-2 text-xs font-bold uppercase tracking-wider text-fire-foreground transition-colors hover:bg-fire/90"
-            >
-              {isLaunch ? "Start Pro" : "Buy Launch Pass"}
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-            {!isLaunch && (
-              <Link
-                href="/pricing?checkout=founder-pro-monthly"
-                onClick={() => trackClientEvent("battle_upgrade_cta_clicked", { placement: "pre_battle_secondary", plan: "founder-pro-monthly" })}
-                className="inline-flex items-center justify-center gap-1.5 border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-amber-300 transition-colors hover:bg-amber-400/15"
-              >
-                Compare Pro
-                <Sparkles className="h-3.5 w-3.5" />
-              </Link>
-            )}
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            {isLaunch
+              ? "Upgrade when you want category targeting, priority placement, and private performance data."
+              : "Launch Pass adds more idea slots, spotlight rotation, lead capture, and challenge links."}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+            {points.map((point) => (
+              <span key={point} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <CheckCircle2 className="h-3 w-3 text-fire" />
+                {point}
+              </span>
+            ))}
           </div>
         </div>
-        <div className="grid grid-cols-3 bg-background/75 lg:grid-cols-1">
-          {benefits.map(({ icon: Icon, label, detail }) => (
-            <div key={label} className="border-l border-border/20 px-3 py-3 lg:border-l-0 lg:border-t">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-fire">
-                <Icon className="h-3 w-3" />
-                {label}
-              </div>
-              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{detail}</p>
-            </div>
-          ))}
-        </div>
+
+        <Link
+          href={href}
+          onClick={() => trackClientEvent("battle_upgrade_cta_clicked", { placement: "pre_battle", plan: eventPlan })}
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 border border-fire/45 bg-fire px-4 py-2 text-xs font-bold uppercase tracking-wider text-fire-foreground transition-colors hover:bg-fire/90"
+        >
+          {isLaunch ? "Upgrade to Pro" : "Get Launch Pass"}
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -359,6 +365,7 @@ export default function BattlePage() {
   const winnerIdea = winner === battle.idea_a.id ? battle.idea_a : winner === battle.idea_b.id ? battle.idea_b : null;
   const loserIdea = loser === battle.idea_a.id ? battle.idea_a : loser === battle.idea_b.id ? battle.idea_b : null;
   const viewerPlan: ViewerPlan = session?.user?.plan ?? "free";
+  const viewerKey = session?.user?.id ?? session?.user?.email ?? "guest";
 
   return (
     <div className="relative mx-auto max-w-5xl px-4 py-6 sm:py-10">
@@ -374,7 +381,7 @@ export default function BattlePage() {
             <span className="text-gradient-fire">make money</span>?
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-            Pick the idea you think matches the crowd signal. Ranked predictor Elo only moves when the matchup has enough prior signal.
+            Pick the SaaS you think the community is leaning toward. Your pick moves that SaaS up, and matching the crowd moves your predictor Elo up.
           </p>
           <p className="mt-1 text-xs text-muted-foreground/70">
             Ratings stay hidden until after you vote.
@@ -397,7 +404,7 @@ export default function BattlePage() {
               return (
                 <Link
                   key={cat}
-                  href={hasPro ? `/battle?category=${encodeURIComponent(cat)}` : "/pricing?checkout=founder-pro-monthly"}
+                  href={hasPro ? `/battle?category=${encodeURIComponent(cat)}` : "/pricing"}
                   onClick={() => {
                     if (!hasPro) trackClientEvent("category_battle_upgrade_clicked", { category: cat });
                   }}
@@ -416,7 +423,7 @@ export default function BattlePage() {
         </div>
       )}
 
-      {!challenge && !voted && <BattleUpgradeStrip plan={viewerPlan} />}
+      {!challenge && !voted && <BattleUpgradeStrip plan={viewerPlan} viewerKey={viewerKey} />}
 
       {error && (
         <div className="mb-4 rounded-none border border-fire/30 bg-fire/5 px-4 py-2 text-center text-sm text-fire">
@@ -475,6 +482,7 @@ export default function BattlePage() {
           onNext={loadBattle}
           onReason={handleReasonSubmit}
           viewerPlan={viewerPlan}
+          viewerKey={viewerKey}
         />
       )}
 

@@ -139,7 +139,7 @@ export default function LeaderboardPage() {
           battle rankings
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Rank ideas by battle results, or compete as a predictor by matching the crowd signal.
+          Rank SaaS ideas by battle wins, or compete as a player by guessing which side the community favors.
         </p>
       </div>
 
@@ -164,7 +164,7 @@ export default function LeaderboardPage() {
       </div>
 
       <div className="mb-6 border border-border/30 bg-card/15 px-4 py-3 text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">Predictor Elo</span> rewards voters who consistently match the pre-vote crowd signal. Weak matchups are provisional until there are enough prior votes or rating separation.
+        <span className="font-semibold text-foreground">How the game works:</span> your vote gives that SaaS a head-to-head Elo win. Your predictor Elo moves separately when your pick matches the community majority that existed before you voted.
       </div>
 
       {board === "predictors" ? (

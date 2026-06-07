@@ -84,22 +84,16 @@ export async function POST(request: Request) {
         ideaBId: battle.idea_b_id,
         ideaAVotes: Number(battle.idea_a_votes ?? 0),
         ideaBVotes: Number(battle.idea_b_votes ?? 0),
-        ideaAElo: Number(ideaA.elo_score),
-        ideaBElo: Number(ideaB.elo_score),
       });
       const predictionDifficulty = getPredictionDifficulty({
         ideaAVotes: Number(battle.idea_a_votes ?? 0),
         ideaBVotes: Number(battle.idea_b_votes ?? 0),
-        ideaAElo: Number(ideaA.elo_score),
-        ideaBElo: Number(ideaB.elo_score),
       });
       const predictionRanked = isRankedPredictionSignal({
         ideaAVotes: Number(battle.idea_a_votes ?? 0),
         ideaBVotes: Number(battle.idea_b_votes ?? 0),
-        ideaAElo: Number(ideaA.elo_score),
-        ideaBElo: Number(ideaB.elo_score),
       });
-      const predictionTargetId = crowdSignalTargetId ?? winner_id;
+      const predictionTargetId = crowdSignalTargetId;
       const predictionCorrect = crowdSignalTargetId === null ? null : winner_id === crowdSignalTargetId;
 
       const voterResult = await client.sql`
@@ -149,13 +143,21 @@ export async function POST(request: Request) {
 
       const { newWinnerRating, newLoserRating } = calculateElo(winner.elo_score, loser.elo_score);
       const isAWinner = winner_id === battle.idea_a_id;
+      const ideaAVotesAfter = Number(battle.idea_a_votes ?? 0) + (isAWinner ? 1 : 0);
+      const ideaBVotesAfter = Number(battle.idea_b_votes ?? 0) + (isAWinner ? 0 : 1);
+      const totalVotesAfter = ideaAVotesAfter + ideaBVotesAfter;
+      const communityLeaderId = ideaAVotesAfter > ideaBVotesAfter
+        ? battle.idea_a_id
+        : ideaBVotesAfter > ideaAVotesAfter
+          ? battle.idea_b_id
+          : null;
 
       await client.sql`UPDATE ideas SET elo_score = ${newWinnerRating}, wins = wins + 1 WHERE id = ${winner_id}`;
       await client.sql`UPDATE ideas SET elo_score = ${newLoserRating}, losses = losses + 1 WHERE id = ${loserId}`;
       await client.sql`
         UPDATE battles SET winner_id = ${winner_id},
-          idea_a_votes = idea_a_votes + ${isAWinner ? 1 : 0},
-          idea_b_votes = idea_b_votes + ${isAWinner ? 0 : 1}
+          idea_a_votes = ${ideaAVotesAfter},
+          idea_b_votes = ${ideaBVotesAfter}
         WHERE id = ${battle_id}
       `;
       await client.sql`
@@ -189,6 +191,15 @@ export async function POST(request: Request) {
           eloDelta: voterEloAfter - voterEloBefore,
           streak: predictionStreak,
           bestStreak: bestPredictionStreak,
+          community: {
+            ideaAId: battle.idea_a_id,
+            ideaBId: battle.idea_b_id,
+            ideaAVotes: ideaAVotesAfter,
+            ideaBVotes: ideaBVotesAfter,
+            totalVotes: totalVotesAfter,
+            leaderId: communityLeaderId,
+            targetIdBeforeVote: crowdSignalTargetId,
+          },
         },
       };
     });

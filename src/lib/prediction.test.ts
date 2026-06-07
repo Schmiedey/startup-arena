@@ -8,14 +8,12 @@ import {
 } from "./prediction";
 
 describe("prediction helpers", () => {
-  it("uses current consensus before falling back to idea Elo", () => {
+  it("uses only the community vote majority as the prediction target", () => {
     expect(getPredictionTarget({
       ideaAId: "a",
       ideaBId: "b",
       ideaAVotes: 5,
       ideaBVotes: 3,
-      ideaAElo: 900,
-      ideaBElo: 1200,
     })).toBe("a");
 
     expect(getPredictionTarget({
@@ -23,23 +21,19 @@ describe("prediction helpers", () => {
       ideaBId: "b",
       ideaAVotes: 0,
       ideaBVotes: 0,
-      ideaAElo: 900,
-      ideaBElo: 1200,
-    })).toBe("b");
+    })).toBeNull();
 
     expect(getPredictionTarget({
       ideaAId: "a",
       ideaBId: "b",
-      ideaAVotes: 0,
-      ideaBVotes: 0,
-      ideaAElo: 1000,
-      ideaBElo: 1000,
+      ideaAVotes: 4,
+      ideaBVotes: 4,
     })).toBeNull();
   });
 
   it("rates close matchups as harder than obvious ones", () => {
-    const close = getPredictionDifficulty({ ideaAVotes: 0, ideaBVotes: 0, ideaAElo: 1000, ideaBElo: 1010 });
-    const obvious = getPredictionDifficulty({ ideaAVotes: 0, ideaBVotes: 0, ideaAElo: 1000, ideaBElo: 1400 });
+    const close = getPredictionDifficulty({ ideaAVotes: 51, ideaBVotes: 49 });
+    const obvious = getPredictionDifficulty({ ideaAVotes: 90, ideaBVotes: 10 });
 
     expect(close).toBeGreaterThan(obvious);
   });
@@ -56,24 +50,18 @@ describe("prediction helpers", () => {
 
   it("keeps weak signals provisional", () => {
     expect(isRankedPredictionSignal({
-      ideaAVotes: 1,
-      ideaBVotes: 1,
-      ideaAElo: 1000,
-      ideaBElo: 1050,
+      ideaAVotes: 0,
+      ideaBVotes: 0,
     })).toBe(false);
 
     expect(isRankedPredictionSignal({
-      ideaAVotes: 2,
-      ideaBVotes: 1,
-      ideaAElo: 1000,
-      ideaBElo: 1050,
-    })).toBe(true);
+      ideaAVotes: 3,
+      ideaBVotes: 3,
+    })).toBe(false);
 
     expect(isRankedPredictionSignal({
-      ideaAVotes: 0,
-      ideaBVotes: 0,
-      ideaAElo: 1000,
-      ideaBElo: 1180,
+      ideaAVotes: 3,
+      ideaBVotes: 2,
     })).toBe(true);
   });
 });

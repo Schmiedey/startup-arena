@@ -87,7 +87,8 @@ export async function GET(request: Request) {
               AND ae.metadata->>'category' = ${category}
           ) last_seen ON TRUE
           WHERE pu.effective_plan <> 'free'
-            AND (featured.id IS NOT NULL OR pu.profile_featured_category = ${category})
+            AND featured.id IS NOT NULL
+            AND stats.ideas_count > 0
           ORDER BY
             CASE WHEN pu.effective_plan = 'pro' THEN 0 ELSE 1 END,
             last_seen.last_impression_at ASC NULLS FIRST,
@@ -157,6 +158,8 @@ export async function GET(request: Request) {
               AND COALESCE(ae.metadata->>'category', 'all') = 'all'
           ) last_seen ON TRUE
           WHERE pu.effective_plan <> 'free'
+            AND featured.id IS NOT NULL
+            AND stats.ideas_count > 0
           ORDER BY
             CASE WHEN pu.effective_plan = 'pro' THEN 0 ELSE 1 END,
             last_seen.last_impression_at ASC NULLS FIRST,

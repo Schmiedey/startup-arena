@@ -1,6 +1,4 @@
 const PREDICTION_K_FACTOR = 32;
-const MIN_RANKED_SIGNAL_VOTES = 3;
-const MIN_RANKED_ELO_GAP = 150;
 
 export const DEFAULT_PREDICTION_ELO = 1000;
 
@@ -9,8 +7,6 @@ export interface PredictionTargetInput {
   ideaBId: string;
   ideaAVotes: number;
   ideaBVotes: number;
-  ideaAElo: number;
-  ideaBElo: number;
 }
 
 export function getPredictionTarget({
@@ -18,20 +14,15 @@ export function getPredictionTarget({
   ideaBId,
   ideaAVotes,
   ideaBVotes,
-  ideaAElo,
-  ideaBElo,
 }: PredictionTargetInput): string | null {
   if (ideaAVotes > ideaBVotes) return ideaAId;
   if (ideaBVotes > ideaAVotes) return ideaBId;
-  if (ideaAElo === ideaBElo) return null;
-  return ideaAElo >= ideaBElo ? ideaAId : ideaBId;
+  return null;
 }
 
 export function getPredictionDifficulty({
   ideaAVotes,
   ideaBVotes,
-  ideaAElo,
-  ideaBElo,
 }: Omit<PredictionTargetInput, "ideaAId" | "ideaBId">): number {
   const totalVotes = ideaAVotes + ideaBVotes;
   if (totalVotes > 0 && ideaAVotes !== ideaBVotes) {
@@ -39,8 +30,7 @@ export function getPredictionDifficulty({
     return Math.round(1200 - margin * 300);
   }
 
-  const eloGap = Math.abs(ideaAElo - ideaBElo);
-  return Math.round(Math.min(1200, Math.max(900, 1200 - eloGap * 0.75)));
+  return 1200;
 }
 
 export function calculatePredictionElo(
@@ -56,11 +46,9 @@ export function calculatePredictionElo(
 export function isRankedPredictionSignal({
   ideaAVotes,
   ideaBVotes,
-  ideaAElo,
-  ideaBElo,
 }: Omit<PredictionTargetInput, "ideaAId" | "ideaBId">): boolean {
   const totalVotes = ideaAVotes + ideaBVotes;
-  return totalVotes >= MIN_RANKED_SIGNAL_VOTES || Math.abs(ideaAElo - ideaBElo) >= MIN_RANKED_ELO_GAP;
+  return totalVotes > 0 && ideaAVotes !== ideaBVotes;
 }
 
 export function getPredictionAccuracy(wins: number, losses: number): number {

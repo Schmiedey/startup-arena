@@ -21,6 +21,8 @@ export async function GET(request: Request) {
         (prediction_wins + prediction_losses)::int AS guesses
       FROM users
       WHERE (prediction_wins + prediction_losses) > 0
+        AND COALESCE(is_bot, false) = false
+        AND COALESCE(is_admin, false) = false
       ORDER BY prediction_elo DESC, prediction_wins DESC, best_prediction_streak DESC
       LIMIT ${limit}
     `;

@@ -23,6 +23,23 @@ interface BattleData {
 interface VoteResult {
   winnerDelta: number;
   loserDelta: number;
+  prediction?: {
+    correct: boolean | null;
+    ranked: boolean;
+    eloBefore: number;
+    eloAfter: number;
+    eloDelta: number;
+    streak: number;
+    community?: {
+      ideaAId: string;
+      ideaBId: string;
+      ideaAVotes: number;
+      ideaBVotes: number;
+      totalVotes: number;
+      leaderId: string | null;
+      targetIdBeforeVote: string | null;
+    };
+  };
 }
 
 type ViewerPlan = "free" | "launch" | "pro";
@@ -129,6 +146,7 @@ export default function SharedBattlePage() {
       setResult({
         winnerDelta: Number(data.newWinnerRating) - winnerBefore.elo_score,
         loserDelta: Number(data.newLoserRating) - loserBefore.elo_score,
+        prediction: data.prediction,
       });
     } catch {
       setError("Could not save your vote.");
@@ -196,6 +214,7 @@ export default function SharedBattlePage() {
   const winnerIdea = winner === battle.idea_a.id ? battle.idea_a : winner === battle.idea_b.id ? battle.idea_b : null;
   const loserIdea = loser === battle.idea_a.id ? battle.idea_a : loser === battle.idea_b.id ? battle.idea_b : null;
   const viewerPlan: ViewerPlan = session?.user?.plan ?? "free";
+  const viewerKey = session?.user?.id ?? session?.user?.email ?? "guest";
 
   return (
     <div className="relative mx-auto max-w-5xl px-4 py-6 sm:py-10">
@@ -262,9 +281,11 @@ export default function SharedBattlePage() {
           battleId={battle.battle_id}
           winnerDelta={result.winnerDelta}
           loserDelta={result.loserDelta}
+          prediction={result.prediction}
           shared={shared}
           onShare={handleShare}
           viewerPlan={viewerPlan}
+          viewerKey={viewerKey}
         />
       )}
 
