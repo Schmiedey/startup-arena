@@ -1,7 +1,7 @@
 import { sql } from "@vercel/postgres";
 import { NextResponse } from "next/server";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
@@ -15,12 +15,18 @@ export async function GET() {
       `,
     ]);
 
-    return NextResponse.json({
-      ideas: Number(ideas.rows[0].count),
-      votes: Number(votes.rows[0].count),
-      battles: Number(battles.rows[0].count),
-    });
+    return NextResponse.json(
+      {
+        ideas: Number(ideas.rows[0].count),
+        votes: Number(votes.rows[0].count),
+        battles: Number(battles.rows[0].count),
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch {
-    return NextResponse.json({ ideas: 0, votes: 0, battles: 0 });
+    return NextResponse.json(
+      { ideas: 0, votes: 0, battles: 0 },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   }
 }

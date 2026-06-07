@@ -161,7 +161,7 @@ async function fetchBattleData(options?: { category?: string | null; challenge?:
 
 async function fetchArenaStats(): Promise<ArenaStats | null> {
   try {
-    const res = await fetch("/api/stats");
+    const res = await fetch("/api/stats", { cache: "no-store" });
     if (!res.ok) return null;
     return await res.json() as ArenaStats;
   } catch {
@@ -173,7 +173,8 @@ export default function BattlePage() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const category = searchParams.get("category");
+  const categoryParam = searchParams.get("category");
+  const category = CATEGORIES.includes(categoryParam as (typeof CATEGORIES)[number]) ? categoryParam : null;
   const challenge = searchParams.get("challenge");
   const [battle, setBattle] = useState<BattleData | null>(null);
   const [voted, setVoted] = useState(false);
@@ -293,6 +294,30 @@ export default function BattlePage() {
         winnerDelta: Number(data.newWinnerRating) - winnerBefore.elo_score,
         loserDelta: Number(data.newLoserRating) - loserBefore.elo_score,
         prediction: data.prediction,
+      });
+
+      const community = data.prediction?.community;
+      if (community) {
+        setBattle((currentBattle) => currentBattle?.battle_id === battle.battle_id
+          ? {
+              ...currentBattle,
+              idea_a_votes: community.ideaAVotes,
+              idea_b_votes: community.ideaBVotes,
+            }
+          : currentBattle
+        );
+      }
+      const wasFirstVoteForBattle = Number(battle.idea_a_votes ?? 0) + Number(battle.idea_b_votes ?? 0) === 0;
+      setArenaStats((currentStats) => currentStats
+        ? {
+            ...currentStats,
+            votes: currentStats.votes + 1,
+            battles: currentStats.battles + (wasFirstVoteForBattle ? 1 : 0),
+          }
+        : currentStats
+      );
+      fetchArenaStats().then((stats) => {
+        if (stats) setArenaStats(stats);
       });
       trackClientEvent("vote_completed", {
         battle_id: battle.battle_id,

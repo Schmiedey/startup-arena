@@ -5,6 +5,13 @@ import { checkBanned, bannedResponse } from "@/lib/admin";
 import { trackEvent } from "@/lib/analytics";
 import { hasProAccess, normalizePlan } from "@/lib/billing";
 import { rateLimit, rateLimitIdentity, rateLimitResponse } from "@/lib/rate-limit";
+import { CATEGORIES } from "@/lib/types";
+
+function normalizeCategoryParam(value: string | null) {
+  const category = value?.trim();
+  if (!category || category.toLowerCase() === "all") return null;
+  return CATEGORIES.includes(category as (typeof CATEGORIES)[number]) ? category : "invalid";
+}
 
 async function getIdeaWithFounder(id: string) {
   const result = await sql`
@@ -53,7 +60,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const battleId = searchParams.get("id");
   const challengeIdeaId = searchParams.get("challenge");
-  const category = searchParams.get("category");
+  const category = normalizeCategoryParam(searchParams.get("category"));
+
+  if (category === "invalid") {
+    return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+  }
 
   if (battleId) {
     try {
@@ -234,7 +245,9 @@ export async function GET(request: Request) {
             AND b.idea_a_id IS NOT NULL AND b.idea_b_id IS NOT NULL
             AND ia.status = 'approved'
             AND ib.status = 'approved'
-            ORDER BY (COALESCE(b.idea_a_votes, 0) + COALESCE(b.idea_b_votes, 0)) DESC, b.created_at DESC
+            ORDER BY
+              CASE WHEN (COALESCE(b.idea_a_votes, 0) + COALESCE(b.idea_b_votes, 0)) > 0 THEN 0 ELSE 1 END,
+              RANDOM()
             LIMIT 1
           `;
 
@@ -253,7 +266,9 @@ export async function GET(request: Request) {
           AND ib.status = 'approved'
           AND b.idea_a_id IS NOT NULL
           AND b.idea_b_id IS NOT NULL
-        ORDER BY (COALESCE(b.idea_a_votes, 0) + COALESCE(b.idea_b_votes, 0)) DESC, b.created_at DESC
+        ORDER BY
+          CASE WHEN (COALESCE(b.idea_a_votes, 0) + COALESCE(b.idea_b_votes, 0)) > 0 THEN 0 ELSE 1 END,
+          RANDOM()
         LIMIT 1
       `;
 
