@@ -6,9 +6,13 @@ export const revalidate = 300;
 export async function GET() {
   try {
     const [ideas, votes, battles] = await Promise.all([
-      sql`SELECT COUNT(*) as count FROM ideas`,
+      sql`SELECT COUNT(*) as count FROM ideas WHERE status = 'approved'`,
       sql`SELECT COUNT(*) as count FROM votes`,
-      sql`SELECT COUNT(*) as count FROM battles`,
+      sql`
+        SELECT COUNT(*) as count
+        FROM battles
+        WHERE COALESCE(idea_a_votes, 0) + COALESCE(idea_b_votes, 0) > 0
+      `,
     ]);
 
     return NextResponse.json({

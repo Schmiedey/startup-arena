@@ -21,6 +21,9 @@ interface BattleData {
   idea_a: Idea;
   idea_b: Idea;
   battle_id: string | null;
+  idea_a_votes: number;
+  idea_b_votes: number;
+  mode?: "active" | "challenge" | "new";
 }
 
 interface VoteResult {
@@ -46,6 +49,19 @@ interface VoteResult {
 }
 
 type ViewerPlan = "free" | "launch" | "pro";
+
+interface ArenaStats {
+  ideas: number;
+  votes: number;
+  battles: number;
+}
+
+function formatArenaNumber(value: number) {
+  return new Intl.NumberFormat("en", {
+    notation: value >= 10000 ? "compact" : "standard",
+    maximumFractionDigits: value >= 10000 ? 1 : 0,
+  }).format(value);
+}
 
 function BattleUpgradeStrip({ plan, viewerKey }: { plan: ViewerPlan; viewerKey: string }) {
   const prompt = useDismissiblePrompt(`likelyr-upgrade-prompt:v1:battle:${plan}:${viewerKey}`);
@@ -143,6 +159,16 @@ async function fetchBattleData(options?: { category?: string | null; challenge?:
   return { battle, commentsA: loadedCommentsA, commentsB: loadedCommentsB };
 }
 
+async function fetchArenaStats(): Promise<ArenaStats | null> {
+  try {
+    const res = await fetch("/api/stats");
+    if (!res.ok) return null;
+    return await res.json() as ArenaStats;
+  } catch {
+    return null;
+  }
+}
+
 export default function BattlePage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -161,6 +187,7 @@ export default function BattlePage() {
   const [showComments, setShowComments] = useState(false);
   const [shared, setShared] = useState(false);
   const [result, setResult] = useState<VoteResult | null>(null);
+  const [arenaStats, setArenaStats] = useState<ArenaStats | null>(null);
 
   const loadBattle = useCallback(async () => {
     setLoading(true);
@@ -204,6 +231,18 @@ export default function BattlePage() {
       cancelled = true;
     };
   }, [category, challenge]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchArenaStats().then((stats) => {
+      if (!cancelled) setArenaStats(stats);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleVote(ideaId: string) {
     if (!battle || voted || voting) return;
@@ -272,7 +311,7 @@ export default function BattlePage() {
     if (!loserIdea) return;
 
     const url = `${window.location.origin}${battlePath({ id: battle.battle_id, idea_a: battle.idea_a, idea_b: battle.idea_b })}`;
-    const text = `${winnerIdea.name} beat ${loserIdea.name} on Likelyr. Think the crowd got it wrong?`;
+    const text = `${winnerIdea.name} won Elo over ${loserIdea.name} on Likelyr. Where does the crowd lean?`;
 
     try {
       if (navigator.share) {
@@ -366,6 +405,26 @@ export default function BattlePage() {
   const loserIdea = loser === battle.idea_a.id ? battle.idea_a : loser === battle.idea_b.id ? battle.idea_b : null;
   const viewerPlan: ViewerPlan = session?.user?.plan ?? "free";
   const viewerKey = session?.user?.id ?? session?.user?.email ?? "guest";
+  const community = result?.prediction?.community;
+  const ideaACommunityVotes = community?.ideaAVotes ?? Number(battle.idea_a_votes ?? 0);
+  const ideaBCommunityVotes = community?.ideaBVotes ?? Number(battle.idea_b_votes ?? 0);
+  const communityTotalVotes = community?.totalVotes ?? ideaACommunityVotes + ideaBCommunityVotes;
+  const ideaACommunityShare = voted && communityTotalVotes > 0
+    ? Math.round((ideaACommunityVotes / communityTotalVotes) * 100)
+    : null;
+  const ideaBCommunityShare = voted && communityTotalVotes > 0
+    ? Math.round((ideaBCommunityVotes / communityTotalVotes) * 100)
+    : null;
+  const ideaADelta = result
+    ? winner === battle.idea_a.id
+      ? result.winnerDelta
+      : result.loserDelta
+    : undefined;
+  const ideaBDelta = result
+    ? winner === battle.idea_b.id
+      ? result.winnerDelta
+      : result.loserDelta
+    : undefined;
 
   return (
     <div className="relative mx-auto max-w-5xl px-4 py-6 sm:py-10">
@@ -377,15 +436,31 @@ export default function BattlePage() {
             {challenge ? "Challenge" : category ? `${category} battle` : "Battle"}
           </div>
           <h1 className="text-2xl font-black sm:text-3xl">
-            {challenge ? "Is this idea likelier to succeed?" : "Which idea is more likely to"}{" "}
+            {challenge ? "Is this idea likelier to succeed?" : "Guess the crowd: which SaaS will"}{" "}
             <span className="text-gradient-fire">make money</span>?
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-            Pick the SaaS you think the community is leaning toward. Your pick moves that SaaS up, and matching the crowd moves your predictor Elo up.
+            Pick the product you think more of the community will back. Your vote gives that SaaS an Elo win, and your predictor Elo moves if you matched the crowd lean before you voted.
           </p>
           <p className="mt-1 text-xs text-muted-foreground/70">
-            Ratings stay hidden until after you vote.
+            Community split and ratings stay hidden until after you vote.
           </p>
+          {arenaStats && (arenaStats.votes > 0 || arenaStats.battles > 0 || arenaStats.ideas > 0) && (
+            <div className="mx-auto mt-5 grid max-w-xl grid-cols-3 border border-border/35 bg-card/25 text-center">
+              <div className="px-3 py-3">
+                <p className="font-mono text-lg font-black text-foreground">{formatArenaNumber(arenaStats.votes)}</p>
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">votes cast</p>
+              </div>
+              <div className="border-x border-border/35 px-3 py-3">
+                <p className="font-mono text-lg font-black text-foreground">{formatArenaNumber(arenaStats.battles)}</p>
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">battles</p>
+              </div>
+              <div className="px-3 py-3">
+                <p className="font-mono text-lg font-black text-foreground">{formatArenaNumber(arenaStats.ideas)}</p>
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">ideas ranked</p>
+              </div>
+            </div>
+          )}
         </div>
 
       {!challenge && (
@@ -439,6 +514,11 @@ export default function BattlePage() {
             voted={voted}
             isWinner={winner === battle.idea_a.id}
             isLoser={loser === battle.idea_a.id}
+            communityShare={ideaACommunityShare}
+            communityVotes={ideaACommunityVotes}
+            communityTotalVotes={communityTotalVotes}
+            isCommunityLeader={community?.leaderId === battle.idea_a.id}
+            eloDelta={ideaADelta}
           />
         </div>
         <div className="hidden sm:flex sm:items-center sm:pt-20">
@@ -458,6 +538,11 @@ export default function BattlePage() {
             voted={voted}
             isWinner={winner === battle.idea_b.id}
             isLoser={loser === battle.idea_b.id}
+            communityShare={ideaBCommunityShare}
+            communityVotes={ideaBCommunityVotes}
+            communityTotalVotes={communityTotalVotes}
+            isCommunityLeader={community?.leaderId === battle.idea_b.id}
+            eloDelta={ideaBDelta}
           />
         </div>
       </div>
@@ -473,9 +558,13 @@ export default function BattlePage() {
         <BattleResultCard
           winner={winnerIdea}
           loser={loserIdea}
+          ideaA={battle.idea_a}
+          ideaB={battle.idea_b}
           battleId={battle.battle_id}
           winnerDelta={result.winnerDelta}
           loserDelta={result.loserDelta}
+          ideaADelta={ideaADelta}
+          ideaBDelta={ideaBDelta}
           prediction={result.prediction}
           shared={shared}
           onShare={shareBattleResult}

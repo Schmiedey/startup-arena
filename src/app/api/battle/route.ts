@@ -25,6 +25,30 @@ async function getIdeaWithFounder(id: string) {
   return result.rows[0];
 }
 
+type BattleRow = {
+  battle_id: string;
+  idea_a_id: string;
+  idea_b_id: string;
+  idea_a_votes?: number | string | null;
+  idea_b_votes?: number | string | null;
+};
+
+async function getBattlePayload(battle: BattleRow, extra: Record<string, unknown> = {}) {
+  const [ideaA, ideaB] = await Promise.all([
+    getIdeaWithFounder(String(battle.idea_a_id)),
+    getIdeaWithFounder(String(battle.idea_b_id)),
+  ]);
+
+  return {
+    idea_a: ideaA,
+    idea_b: ideaB,
+    battle_id: battle.battle_id,
+    idea_a_votes: Number(battle.idea_a_votes ?? 0),
+    idea_b_votes: Number(battle.idea_b_votes ?? 0),
+    ...extra,
+  };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const battleId = searchParams.get("id");
@@ -34,23 +58,14 @@ export async function GET(request: Request) {
   if (battleId) {
     try {
       const battleResult = await sql`
-        SELECT b.id as battle_id, b.idea_a_id, b.idea_b_id
+        SELECT b.id as battle_id, b.idea_a_id, b.idea_b_id, b.idea_a_votes, b.idea_b_votes
         FROM battles b
         WHERE b.id = ${battleId}
       `;
       if (battleResult.rows.length === 0) {
         return NextResponse.json({ error: "Battle not found" }, { status: 404 });
       }
-      const battle = battleResult.rows[0];
-      const [ideaA, ideaB] = await Promise.all([
-        getIdeaWithFounder(String(battle.idea_a_id)),
-        getIdeaWithFounder(String(battle.idea_b_id)),
-      ]);
-      return NextResponse.json({
-        idea_a: ideaA,
-        idea_b: ideaB,
-        battle_id: battle.battle_id,
-      });
+      return NextResponse.json(await getBattlePayload(battleResult.rows[0] as BattleRow));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Battle fetch failed";
       return NextResponse.json({ error: message }, { status: 500 });
@@ -168,7 +183,7 @@ export async function GET(request: Request) {
       const battleResult = await sql`
         INSERT INTO battles (idea_a_id, idea_b_id)
         VALUES (${ideaA.id}, ${ideaB.id})
-        RETURNING id
+        RETURNING id as battle_id, idea_a_id, idea_b_id, idea_a_votes, idea_b_votes
       `;
       await trackEvent({
         name: "battle_created",
@@ -177,19 +192,14 @@ export async function GET(request: Request) {
         metadata: { mode: "challenge", category: ideaA.category },
       });
 
-      return NextResponse.json({
-        idea_a: ideaA,
-        idea_b: ideaB,
-        battle_id: battleResult.rows[0].id,
-        mode: "challenge",
-      });
+      return NextResponse.json(await getBattlePayload(battleResult.rows[0] as BattleRow, { mode: "challenge" }));
     }
 
     if (user) {
       // Find an existing battle the user hasn't voted on.
       const existingBattle = category
         ? await sql`
-            SELECT b.id as battle_id, b.idea_a_id, b.idea_b_id
+            SELECT b.id as battle_id, b.idea_a_id, b.idea_b_id, b.idea_a_votes, b.idea_b_votes
             FROM battles b
             JOIN ideas ia ON ia.id = b.idea_a_id
             JOIN ideas ib ON ib.id = b.idea_b_id
@@ -203,12 +213,16 @@ export async function GET(request: Request) {
             )
             AND ia.category = ${category}
             AND ib.category = ${category}
-            ORDER BY b.created_at DESC
+            AND ia.status = 'approved'
+            AND ib.status = 'approved'
+            ORDER BY (COALESCE(b.idea_a_votes, 0) + COALESCE(b.idea_b_votes, 0)) DESC, b.created_at DESC
             LIMIT 1
           `
         : await sql`
-            SELECT b.id as battle_id, b.idea_a_id, b.idea_b_id
+            SELECT b.id as battle_id, b.idea_a_id, b.idea_b_id, b.idea_a_votes, b.idea_b_votes
             FROM battles b
+            JOIN ideas ia ON ia.id = b.idea_a_id
+            JOIN ideas ib ON ib.id = b.idea_b_id
             WHERE NOT EXISTS (
               SELECT 1 FROM votes v WHERE v.battle_id = b.id AND v.user_id = ${user.id}
             )
@@ -218,22 +232,33 @@ export async function GET(request: Request) {
                 AND (own.id = b.idea_a_id OR own.id = b.idea_b_id)
             )
             AND b.idea_a_id IS NOT NULL AND b.idea_b_id IS NOT NULL
-            ORDER BY b.created_at DESC
+            AND ia.status = 'approved'
+            AND ib.status = 'approved'
+            ORDER BY (COALESCE(b.idea_a_votes, 0) + COALESCE(b.idea_b_votes, 0)) DESC, b.created_at DESC
             LIMIT 1
           `;
 
       if (existingBattle.rows.length > 0) {
-        const battle = existingBattle.rows[0];
-        const [ideaA, ideaB] = await Promise.all([
-          getIdeaWithFounder(String(battle.idea_a_id)),
-          getIdeaWithFounder(String(battle.idea_b_id)),
-        ]);
+        return NextResponse.json(await getBattlePayload(existingBattle.rows[0] as BattleRow, { mode: "active" }));
+      }
+    }
 
-        return NextResponse.json({
-          idea_a: ideaA,
-          idea_b: ideaB,
-          battle_id: battle.battle_id,
-        });
+    if (!user && !category && !challengeIdeaId) {
+      const publicBattle = await sql`
+        SELECT b.id as battle_id, b.idea_a_id, b.idea_b_id, b.idea_a_votes, b.idea_b_votes
+        FROM battles b
+        JOIN ideas ia ON ia.id = b.idea_a_id
+        JOIN ideas ib ON ib.id = b.idea_b_id
+        WHERE ia.status = 'approved'
+          AND ib.status = 'approved'
+          AND b.idea_a_id IS NOT NULL
+          AND b.idea_b_id IS NOT NULL
+        ORDER BY (COALESCE(b.idea_a_votes, 0) + COALESCE(b.idea_b_votes, 0)) DESC, b.created_at DESC
+        LIMIT 1
+      `;
+
+      if (publicBattle.rows.length > 0) {
+        return NextResponse.json(await getBattlePayload(publicBattle.rows[0] as BattleRow, { mode: "active" }));
       }
     }
 
@@ -298,7 +323,7 @@ export async function GET(request: Request) {
     const battleResult = await sql`
       INSERT INTO battles (idea_a_id, idea_b_id)
       VALUES (${ideaA.id}, ${ideaB.id})
-      RETURNING *
+      RETURNING id as battle_id, idea_a_id, idea_b_id, idea_a_votes, idea_b_votes
     `;
     await trackEvent({
       name: "battle_created",
@@ -307,11 +332,7 @@ export async function GET(request: Request) {
       metadata: { mode: "standard", category: category ?? "all" },
     });
 
-    return NextResponse.json({
-      idea_a: ideaA,
-      idea_b: ideaB,
-      battle_id: battleResult.rows[0].id,
-    });
+    return NextResponse.json(await getBattlePayload(battleResult.rows[0] as BattleRow, { mode: "new" }));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Battle failed";
     return NextResponse.json({ error: message }, { status: 500 });

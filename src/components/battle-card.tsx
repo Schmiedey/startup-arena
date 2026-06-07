@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSurvivalRating } from "@/lib/elo";
-import { Crown, ExternalLink, Trophy, Zap, TrendingUp, Mail } from "lucide-react";
+import { Crown, ExternalLink, Trophy, Zap, TrendingUp, Mail, Users } from "lucide-react";
 import Image from "next/image";
 import { Avatar } from "@/components/avatar";
 import { founderPath } from "@/lib/seo";
@@ -21,6 +21,11 @@ interface BattleCardProps {
   voted: boolean;
   isWinner?: boolean;
   isLoser?: boolean;
+  communityShare?: number | null;
+  communityVotes?: number | null;
+  communityTotalVotes?: number | null;
+  isCommunityLeader?: boolean;
+  eloDelta?: number;
 }
 
 export function BattleCard({
@@ -29,12 +34,22 @@ export function BattleCard({
   voted,
   isWinner,
   isLoser,
+  communityShare,
+  communityVotes,
+  communityTotalVotes,
+  isCommunityLeader,
+  eloDelta = 0,
 }: BattleCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
-  const survivalRating = getSurvivalRating(idea.elo_score);
+  const displayedElo = idea.elo_score + (voted ? eloDelta : 0);
+  const displayedWins = idea.wins + (voted && isWinner ? 1 : 0);
+  const displayedLosses = idea.losses + (voted && isLoser ? 1 : 0);
+  const survivalRating = getSurvivalRating(displayedElo);
   const [pressing, setPressing] = useState(false);
   const isPaidIdea = idea.user_plan === "launch" || idea.user_plan === "pro";
+  const hasCommunitySplit = voted && communityShare !== null && communityShare !== undefined && communityTotalVotes !== null && communityTotalVotes !== undefined && communityTotalVotes > 0;
+  const boundedCommunityShare = Math.max(0, Math.min(100, communityShare ?? 0));
 
   useEffect(() => {
     if (!voted || !isPaidIdea || !idea.user_id) return;
@@ -116,28 +131,60 @@ export function BattleCard({
         </div>
 
         {voted ? (
-          <div className="grid grid-cols-3 gap-2 rounded-lg bg-background/80 p-3 animate-slide-up">
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">Record</p>
-              <p className="text-sm font-semibold">
-                <span className="text-emerald-400">{idea.wins}W</span>
-                <span className="text-muted-foreground"> / </span>
-                <span className="text-red-400">{idea.losses}L</span>
-              </p>
-            </div>
-            <div className="text-center border-x border-border/50">
-              <p className="text-xs text-muted-foreground">Elo</p>
-              <p className="text-sm font-bold text-fire">{idea.elo_score}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">Survival</p>
-              <p className="text-sm font-bold text-emerald-400">{survivalRating}%</p>
+          <div className="space-y-3 animate-slide-up">
+            {hasCommunitySplit && (
+              <div className={`border p-3 ${
+                isCommunityLeader ? "border-emerald-400/35 bg-emerald-400/10" : "border-border/35 bg-background/75"
+              }`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <Users className="h-3 w-3 text-fire" />
+                    Community
+                  </div>
+                  {isCommunityLeader && (
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                      crowd lead
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 flex items-end justify-between gap-3">
+                  <p className="text-2xl font-black leading-none text-foreground">{boundedCommunityShare}%</p>
+                  <p className="pb-0.5 text-xs text-muted-foreground">
+                    {communityVotes ?? 0}/{communityTotalVotes} votes
+                  </p>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden bg-border/40">
+                  <div
+                    className={`h-full ${isCommunityLeader ? "bg-emerald-400" : "bg-fire"}`}
+                    style={{ width: `${boundedCommunityShare}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-2 rounded-lg bg-background/80 p-3">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">Record</p>
+                <p className="text-sm font-semibold">
+                  <span className="text-emerald-400">{displayedWins}W</span>
+                  <span className="text-muted-foreground"> / </span>
+                  <span className="text-red-400">{displayedLosses}L</span>
+                </p>
+              </div>
+              <div className="text-center border-x border-border/50">
+                <p className="text-xs text-muted-foreground">Elo</p>
+                <p className="text-sm font-bold text-fire">{displayedElo}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">Survival</p>
+                <p className="text-sm font-bold text-emerald-400">{survivalRating}%</p>
+              </div>
             </div>
           </div>
         ) : (
           <div className="rounded-lg border border-border/30 bg-background/60 p-3 text-center">
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ratings hidden</p>
-            <p className="mt-1 text-xs text-muted-foreground">Pick first. See score after.</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">crowd hidden</p>
+            <p className="mt-1 text-xs text-muted-foreground">Pick first. The community split unlocks after.</p>
           </div>
         )}
 
@@ -204,20 +251,20 @@ export function BattleCard({
             size="lg"
           >
             <Trophy className="mr-2 h-4 w-4" />
-            This one wins
+            Back this SaaS
           </Button>
         )}
         {voted && isWinner && (
           <div className="animate-pulse-fire text-center py-2">
             <span className="text-lg font-black tracking-wider text-fire">
-              WINNER
+              ELO WIN
             </span>
           </div>
         )}
         {voted && isLoser && (
           <div className="text-center py-2">
             <span className="text-sm font-medium tracking-wider text-muted-foreground">
-              ELIMINATED
+              ELO LOSS
             </span>
           </div>
         )}

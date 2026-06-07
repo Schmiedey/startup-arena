@@ -18,6 +18,8 @@ interface BattleData {
   idea_a: Idea;
   idea_b: Idea;
   battle_id: string | null;
+  idea_a_votes: number;
+  idea_b_votes: number;
 }
 
 interface VoteResult {
@@ -174,7 +176,7 @@ export default function SharedBattlePage() {
     const winnerIdea = winner === battle?.idea_a.id ? battle.idea_a : winner === battle?.idea_b.id ? battle.idea_b : null;
     const loserIdea = loser === battle?.idea_a.id ? battle.idea_a : loser === battle?.idea_b.id ? battle.idea_b : null;
     const text = winnerIdea && loserIdea
-      ? `${winnerIdea.name} beat ${loserIdea.name} on Likelyr. Think the crowd got it wrong?`
+      ? `${winnerIdea.name} won Elo over ${loserIdea.name} on Likelyr. Where does the crowd lean?`
       : "Vote on this idea battle on Likelyr.";
 
     if (navigator.share) {
@@ -215,6 +217,26 @@ export default function SharedBattlePage() {
   const loserIdea = loser === battle.idea_a.id ? battle.idea_a : loser === battle.idea_b.id ? battle.idea_b : null;
   const viewerPlan: ViewerPlan = session?.user?.plan ?? "free";
   const viewerKey = session?.user?.id ?? session?.user?.email ?? "guest";
+  const community = result?.prediction?.community;
+  const ideaACommunityVotes = community?.ideaAVotes ?? Number(battle.idea_a_votes ?? 0);
+  const ideaBCommunityVotes = community?.ideaBVotes ?? Number(battle.idea_b_votes ?? 0);
+  const communityTotalVotes = community?.totalVotes ?? ideaACommunityVotes + ideaBCommunityVotes;
+  const ideaACommunityShare = voted && communityTotalVotes > 0
+    ? Math.round((ideaACommunityVotes / communityTotalVotes) * 100)
+    : null;
+  const ideaBCommunityShare = voted && communityTotalVotes > 0
+    ? Math.round((ideaBCommunityVotes / communityTotalVotes) * 100)
+    : null;
+  const ideaADelta = result
+    ? winner === battle.idea_a.id
+      ? result.winnerDelta
+      : result.loserDelta
+    : undefined;
+  const ideaBDelta = result
+    ? winner === battle.idea_b.id
+      ? result.winnerDelta
+      : result.loserDelta
+    : undefined;
 
   return (
     <div className="relative mx-auto max-w-5xl px-4 py-6 sm:py-10">
@@ -237,9 +259,12 @@ export default function SharedBattlePage() {
           Shared Battle
         </div>
         <h1 className="text-2xl font-black sm:text-3xl">
-          Which idea is more likely to{" "}
+          Guess the crowd: which SaaS will{" "}
           <span className="text-gradient-fire">make money</span>?
         </h1>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+          Pick the product you think more of the community will back. The community split unlocks after your vote.
+        </p>
       </div>
 
       {error && (
@@ -250,7 +275,18 @@ export default function SharedBattlePage() {
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="flex-1 animate-slide-in-left">
-          <BattleCard idea={battle.idea_a} onVote={handleVote} voted={voted} isWinner={winner === battle.idea_a.id} isLoser={loser === battle.idea_a.id} />
+          <BattleCard
+            idea={battle.idea_a}
+            onVote={handleVote}
+            voted={voted}
+            isWinner={winner === battle.idea_a.id}
+            isLoser={loser === battle.idea_a.id}
+            communityShare={ideaACommunityShare}
+            communityVotes={ideaACommunityVotes}
+            communityTotalVotes={communityTotalVotes}
+            isCommunityLeader={community?.leaderId === battle.idea_a.id}
+            eloDelta={ideaADelta}
+          />
         </div>
         <div className="hidden sm:flex sm:items-center sm:pt-20">
           <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-fire/30 bg-fire/5 animate-vs-pulse">
@@ -263,7 +299,18 @@ export default function SharedBattlePage() {
           </div>
         </div>
         <div className="flex-1 animate-slide-in-right">
-          <BattleCard idea={battle.idea_b} onVote={handleVote} voted={voted} isWinner={winner === battle.idea_b.id} isLoser={loser === battle.idea_b.id} />
+          <BattleCard
+            idea={battle.idea_b}
+            onVote={handleVote}
+            voted={voted}
+            isWinner={winner === battle.idea_b.id}
+            isLoser={loser === battle.idea_b.id}
+            communityShare={ideaBCommunityShare}
+            communityVotes={ideaBCommunityVotes}
+            communityTotalVotes={communityTotalVotes}
+            isCommunityLeader={community?.leaderId === battle.idea_b.id}
+            eloDelta={ideaBDelta}
+          />
         </div>
       </div>
 
@@ -278,9 +325,13 @@ export default function SharedBattlePage() {
         <BattleResultCard
           winner={winnerIdea}
           loser={loserIdea}
+          ideaA={battle.idea_a}
+          ideaB={battle.idea_b}
           battleId={battle.battle_id}
           winnerDelta={result.winnerDelta}
           loserDelta={result.loserDelta}
+          ideaADelta={ideaADelta}
+          ideaBDelta={ideaBDelta}
           prediction={result.prediction}
           shared={shared}
           onShare={handleShare}

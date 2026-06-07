@@ -26,11 +26,11 @@ export async function generateMetadata({ params }: BattleLayoutProps): Promise<M
   }
 
   const title = battle.winner && battle.loser
-    ? `${battle.winner.name} beat ${battle.loser.name}`
+    ? `${battle.winner.name} won Elo over ${battle.loser.name}`
     : `${battle.idea_a.name} vs ${battle.idea_b.name}`;
   const description = battle.winner && battle.loser
-    ? `Think the crowd got it wrong? Vote on ${battle.winner.name} vs ${battle.loser.name}.`
-    : `Which idea is more likely to succeed: ${battle.idea_a.name} or ${battle.idea_b.name}?`;
+    ? `Where does the crowd lean? Vote on ${battle.idea_a.name} vs ${battle.idea_b.name}.`
+    : `Guess which SaaS the community will back: ${battle.idea_a.name} or ${battle.idea_b.name}.`;
   const path = battlePath(battle);
   const image = {
     url: `${path}/opengraph-image`,
@@ -71,11 +71,11 @@ export default async function BattleLayout({ children, params }: BattleLayoutPro
 
   const path = battlePath(battle);
   const title = battle.winner && battle.loser
-    ? `${battle.winner.name} beat ${battle.loser.name}`
+    ? `${battle.winner.name} won Elo over ${battle.loser.name}`
     : `${battle.idea_a.name} vs ${battle.idea_b.name}`;
   const description = battle.winner && battle.loser
-    ? `Likelyr voters picked ${battle.winner.name} over ${battle.loser.name} in a startup idea battle.`
-    : `Vote on whether ${battle.idea_a.name} or ${battle.idea_b.name} is more likely to succeed.`;
+    ? `Likelyr voters moved ${battle.winner.name} up in a community SaaS battle.`
+    : `Vote on which SaaS the community will back.`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",

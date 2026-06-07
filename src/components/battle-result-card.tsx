@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CheckCircle2, Crown, Share2, Sparkles, Swords, Trophy, MessageCircle, Target, X } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Crown, Share2, Sparkles, Swords, Trophy, MessageCircle, Target, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Idea } from "@/lib/types";
 import { battlePath } from "@/lib/seo";
@@ -12,9 +12,13 @@ import { useDismissiblePrompt } from "@/lib/use-dismissible-prompt";
 interface BattleResultCardProps {
   winner: Idea;
   loser: Idea;
+  ideaA?: Idea;
+  ideaB?: Idea;
   battleId: string | null;
   winnerDelta: number;
   loserDelta: number;
+  ideaADelta?: number;
+  ideaBDelta?: number;
   prediction?: {
     correct: boolean | null;
     ranked: boolean;
@@ -113,9 +117,13 @@ function ResultUpgradePrompt({ viewerPlan = "free", viewerKey = "guest" }: { vie
 export function BattleResultCard({
   winner,
   loser,
+  ideaA,
+  ideaB,
   battleId,
   winnerDelta,
   loserDelta,
+  ideaADelta,
+  ideaBDelta,
   prediction,
   shared,
   onShare,
@@ -128,21 +136,37 @@ export function BattleResultCard({
   const [reasonSubmitted, setReasonSubmitted] = useState(false);
   const [reasonSubmitting, setReasonSubmitting] = useState(false);
   const community = prediction?.community;
-  const winnerCommunityVotes = community
-    ? winner.id === community.ideaAId
-      ? community.ideaAVotes
-      : community.ideaBVotes
-    : null;
-  const loserCommunityVotes = community
-    ? loser.id === community.ideaAId
-      ? community.ideaAVotes
-      : community.ideaBVotes
-    : null;
-  const winnerCommunityShare = community && winnerCommunityVotes !== null && community.totalVotes > 0
-    ? Math.round((winnerCommunityVotes / community.totalVotes) * 100)
-    : null;
-  const loserCommunityShare = community && loserCommunityVotes !== null && community.totalVotes > 0
-    ? Math.round((loserCommunityVotes / community.totalVotes) * 100)
+  const sideA = ideaA ?? winner;
+  const sideB = ideaB ?? loser;
+  const orderedSides = [sideA, sideB].map((idea) => {
+    const explicitDelta = ideaA?.id === idea.id
+      ? ideaADelta
+      : ideaB?.id === idea.id
+        ? ideaBDelta
+        : undefined;
+    const delta = explicitDelta ?? (idea.id === winner.id ? winnerDelta : loserDelta);
+    const communityVotes = community
+      ? idea.id === community.ideaAId
+        ? community.ideaAVotes
+        : idea.id === community.ideaBId
+          ? community.ideaBVotes
+          : null
+      : null;
+    const communityShare = community && communityVotes !== null && community.totalVotes > 0
+      ? Math.round((communityVotes / community.totalVotes) * 100)
+      : null;
+
+    return {
+      idea,
+      delta,
+      isWinner: idea.id === winner.id,
+      isCommunityLeader: community?.leaderId === idea.id,
+      communityVotes,
+      communityShare,
+    };
+  });
+  const preVoteTargetName = community?.targetIdBeforeVote
+    ? orderedSides.find((side) => side.idea.id === community.targetIdBeforeVote)?.idea.name
     : null;
 
   async function submitReason() {
@@ -163,31 +187,83 @@ export function BattleResultCard({
           Result
         </div>
         <h2 className="text-2xl font-black leading-tight font-[family-name:var(--font-chakra)]">
-          {winner.name} beat {loser.name}
+          {winner.name} won Elo in this matchup
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your pick gained SaaS Elo from this head-to-head vote.
+          Your vote moved the SaaS leaderboard. The crowd split shows where the community stands now.
         </p>
       </div>
 
       <div className="grid gap-px bg-border/20 sm:grid-cols-2">
-        <div className="bg-background/80 px-5 py-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-emerald-400">Winner</p>
-          <p className="mt-1 truncate text-lg font-bold">{winner.name}</p>
-          <div className="mt-3 flex items-center gap-3 text-sm">
-            <span className="font-mono text-fire">{winner.elo_score + winnerDelta} Elo</span>
-            <span className="font-mono text-emerald-400">+{winnerDelta}</span>
+        {orderedSides.map((side) => (
+          <div key={side.idea.id} className="bg-background/80 px-5 py-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className={`text-xs font-bold uppercase tracking-widest ${
+                side.isWinner ? "text-emerald-400" : "text-red-400"
+              }`}>
+                {side.isWinner ? "Won this vote" : "Lost this vote"}
+              </p>
+              {side.isWinner && (
+                <span className="border border-fire/30 bg-fire/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-fire">
+                  Your pick
+                </span>
+              )}
+            </div>
+            <p className="mt-1 truncate text-lg font-bold">{side.idea.name}</p>
+            <div className="mt-3 flex items-center gap-3 text-sm">
+              <span className={side.isWinner ? "font-mono text-fire" : "font-mono text-muted-foreground"}>
+                {side.idea.elo_score + side.delta} Elo
+              </span>
+              <span className={side.delta >= 0 ? "font-mono text-emerald-400" : "font-mono text-red-400"}>
+                {side.delta >= 0 ? "+" : ""}{side.delta}
+              </span>
+            </div>
           </div>
-        </div>
-        <div className="bg-background/80 px-5 py-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-red-400">Eliminated</p>
-          <p className="mt-1 truncate text-lg font-bold">{loser.name}</p>
-          <div className="mt-3 flex items-center gap-3 text-sm">
-            <span className="font-mono text-muted-foreground">{loser.elo_score + loserDelta} Elo</span>
-            <span className="font-mono text-red-400">{loserDelta}</span>
-          </div>
-        </div>
+        ))}
       </div>
+
+      {community && (
+        <div className="border-t border-fire/15 bg-background/75 px-5 py-4">
+          <div className="mb-4 flex items-start gap-3">
+            <Users className="mt-0.5 h-4 w-4 shrink-0 text-fire" />
+            <div>
+              <p className="text-sm font-bold">Community vote split</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Based on {community.totalVotes} {community.totalVotes === 1 ? "vote" : "votes"} on this matchup.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {orderedSides.map((side) => {
+              const share = side.communityShare ?? 0;
+              const boundedShare = Math.max(0, Math.min(100, share));
+
+              return (
+                <div key={side.idea.id}>
+                  <div className="mb-1.5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{side.idea.name}</p>
+                      {side.isCommunityLeader && (
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">community lead</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-mono text-xl font-black text-foreground">{share}%</p>
+                      <p className="text-[10px] text-muted-foreground">{side.communityVotes ?? 0} votes</p>
+                    </div>
+                  </div>
+                  <div className="h-2 overflow-hidden bg-border/40">
+                    <div
+                      className={`h-full ${side.isCommunityLeader ? "bg-emerald-400" : "bg-fire"}`}
+                      style={{ width: `${boundedShare}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {prediction && (
         <div className="border-t border-fire/15 bg-background/70 px-5 py-4">
@@ -196,24 +272,11 @@ export function BattleResultCard({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">
                 {!prediction.ranked
-                  ? "Provisional guess: the community was tied before your vote."
+                  ? "No predictor Elo change yet. The community was tied before your vote."
                   : prediction.correct
-                    ? "You guessed with the community majority."
-                    : "You guessed against the community majority."}
+                    ? `You matched the pre-vote crowd lean${preVoteTargetName ? ` toward ${preVoteTargetName}` : ""}.`
+                    : `You went against the pre-vote crowd lean${preVoteTargetName ? ` toward ${preVoteTargetName}` : ""}.`}
               </p>
-              {community && (
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Community now:{" "}
-                  <span className="font-mono text-foreground">
-                    {winnerCommunityShare ?? 0}%
-                  </span>{" "}
-                  {winner.name} /{" "}
-                  <span className="font-mono text-foreground">
-                    {loserCommunityShare ?? 0}%
-                  </span>{" "}
-                  {loser.name}
-                </p>
-              )}
               {prediction.ranked ? (
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Predictor Elo:{" "}
@@ -226,7 +289,7 @@ export function BattleResultCard({
                 </p>
               ) : (
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Once the community has a clear pre-vote lean, matching it raises your predictor Elo and missing it lowers your score.
+                  The next votes on this matchup become ranked once one side has a clear crowd lead.
                 </p>
               )}
             </div>
@@ -298,7 +361,7 @@ export function BattleResultCard({
           )}
           {battleId && (
             <Link
-              href={battlePath({ id: battleId, idea_a: winner, idea_b: loser })}
+              href={battlePath({ id: battleId, idea_a: sideA, idea_b: sideB })}
               className="inline-flex items-center gap-2 border border-border/40 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:border-fire/30 hover:text-fire"
             >
               <Swords className="h-3.5 w-3.5" />

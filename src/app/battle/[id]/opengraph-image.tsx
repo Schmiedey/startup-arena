@@ -25,8 +25,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const leftWon = battle.winner?.id === battle.idea_a.id;
   const rightWon = battle.winner?.id === battle.idea_b.id;
   const headline = battle.winner && battle.loser
-    ? `${battle.winner.name} beat ${battle.loser.name}`
-    : "Which idea is likelier?";
+    ? `${battle.winner.name} won Elo`
+    : "Guess the crowd";
 
   return new ImageResponse(
     (
@@ -62,7 +62,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         </div>
 
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ fontSize: 58, lineHeight: 0.98, fontWeight: 950, letterSpacing: -2, textAlign: "center" }}>
+          <div style={{ fontSize: 58, lineHeight: 0.98, fontWeight: 950, letterSpacing: 0, textAlign: "center" }}>
             {headline}
           </div>
 
@@ -76,7 +76,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         </div>
 
         <div style={{ position: "relative", textAlign: "center", fontSize: 24, color: "#c7bdb7", fontWeight: 800 }}>
-          Think the crowd got it wrong? Challenge the result.
+          Vote on the community split and challenge the result.
         </div>
       </div>
     ),
@@ -117,7 +117,7 @@ function BattleIdea({
           {side}
         </div>
         <div style={{ color: winner ? "#ff8a4c" : "#b8aaa3", fontSize: 17, fontWeight: 900, textTransform: "uppercase" }}>
-          {winner ? "Winner" : category}
+          {winner ? "Elo win" : category}
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
