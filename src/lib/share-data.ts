@@ -1,7 +1,7 @@
 import { sql } from "@vercel/postgres";
 import { cache } from "react";
 import { getSurvivalRating, getWinRate } from "@/lib/elo";
-import { extractEntityId } from "@/lib/seo";
+import { extractEntityId, isUuid } from "@/lib/seo";
 
 export interface ShareIdea {
   id: string;
@@ -44,6 +44,8 @@ export interface ShareFounder {
 
 export const getShareIdea = cache(async (id: string): Promise<ShareIdea | null> => {
   const ideaId = extractEntityId(id);
+  if (!isUuid(ideaId)) return null;
+
   const result = await sql`
     SELECT
       i.id,
@@ -70,6 +72,8 @@ export const getShareIdea = cache(async (id: string): Promise<ShareIdea | null> 
 
 export const getShareBattle = cache(async (id: string): Promise<ShareBattle | null> => {
   const battleId = extractEntityId(id);
+  if (!isUuid(battleId)) return null;
+
   const battleResult = await sql`
     SELECT id, idea_a_id, idea_b_id, winner_id, created_at
     FROM battles
@@ -100,6 +104,8 @@ export const getShareBattle = cache(async (id: string): Promise<ShareBattle | nu
 
 export const getShareFounder = cache(async (id: string): Promise<ShareFounder | null> => {
   const founderId = extractEntityId(id);
+  if (!isUuid(founderId)) return null;
+
   const result = await sql`
     SELECT
       u.id,

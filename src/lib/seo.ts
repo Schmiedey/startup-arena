@@ -52,6 +52,10 @@ export function extractEntityId(value: string): string {
   return uuidMatch?.[0] ?? value;
 }
 
+export function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 export function ideaPath(idea: { id: string; name: string }): string {
   return `/idea/${idea.id}-${slugify(idea.name, "startup-idea")}`;
 }
