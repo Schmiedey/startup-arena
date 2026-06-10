@@ -250,7 +250,7 @@ export default function BattlePage() {
 
     if (!session?.user) {
       trackClientEvent("vote_auth_required", { battle_id: battle.battle_id });
-      router.push("/signin");
+      router.push(`/signin?callbackUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
 

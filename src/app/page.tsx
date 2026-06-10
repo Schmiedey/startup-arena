@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Flame, MessageSquare, Rocket, Swords, TrendingUp, Trophy } from "lucide-react";
+import { ArrowRight, CheckCircle2, Flame, MessageSquare, Rocket, Swords, TrendingUp, Trophy, Zap } from "lucide-react";
 import { LikelyrBackground } from "@/components/likelyr-background";
 import { BattleScene3D } from "@/components/battle-scene-3d";
 import { TrendingIdeas } from "@/components/trending-ideas";
 import { HomeStats } from "@/components/home-stats";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { LiveBattlePreview } from "@/components/live-battle-preview";
 
 const PATHWAY_OPTIONS = [
   {
@@ -68,34 +69,133 @@ export default function HomePage() {
                 the startup arena
               </p>
               <h1 className="text-[2.8rem] leading-[0.95] font-black tracking-tight sm:text-[5.5rem] font-[family-name:var(--font-chakra)] animate-hero-text" style={{ animationDelay: "0.1s" }}>
-                vote on ideas
+                is your idea
                 <br />
-                <span className="text-gradient-fire">predict the crowd</span>
+                <span className="text-gradient-fire">actually good?</span>
               </h1>
               <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground animate-hero-text" style={{ animationDelay: "0.25s" }}>
-                Submit a startup idea or vote in head-to-head battles. Ideas climb by surviving votes.
-                Voters climb by predicting the crowd signal before ratings are revealed.
+                Likelyr pits startup ideas against each other in head-to-head battles.
+                Real people vote on which they&apos;d actually pay for.
+                Find out where your idea stands — or discover your next one.
               </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center animate-hero-text" style={{ animationDelay: "0.4s" }}>
                 <Link
                   href="/battle"
                   className="group inline-flex items-center justify-center gap-2.5 rounded-none bg-fire px-8 py-4 text-base font-bold uppercase tracking-wider text-fire-foreground shadow-[0_0_40px_rgba(220,60,30,0.35)] transition-all hover:shadow-[0_0_60px_rgba(220,60,30,0.5)] hover:scale-[1.03] active:scale-[0.98]"
                 >
-                  start predicting
+                  see a battle
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <Link
                   href="/submit"
                   className="inline-flex items-center justify-center gap-2 rounded-none border border-border/60 px-8 py-4 text-base font-semibold uppercase tracking-wider transition-all hover:bg-panel hover:border-fire/30 hover:shadow-[0_0_20px_rgba(220,60,30,0.1)]"
                 >
-                  submit idea
+                  submit your idea
                 </Link>
               </div>
+              <p className="mt-4 text-xs text-muted-foreground/70 animate-hero-text" style={{ animationDelay: "0.45s" }}>
+                No account needed to watch. Free to try.
+              </p>
               <HomeStats />
             </div>
             <div className="hidden lg:block relative h-[440px] animate-hero-text" style={{ animationDelay: "0.5s" }}>
               <BattleScene3D />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Live battle preview — try before you commit ── */}
+      <section className="relative border-b border-border/30 bg-card/10">
+        <LikelyrBackground className="opacity-10" />
+        <div className="relative z-10 mx-auto max-w-5xl px-6 py-12 sm:py-16">
+          <ScrollReveal animation="reveal-up">
+            <div className="text-center mb-8">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-fire flex items-center justify-center gap-2">
+                <Zap className="h-3.5 w-3.5" />
+                Try it now
+              </p>
+              <h2 className="text-2xl font-black sm:text-3xl font-[family-name:var(--font-chakra)]">
+                which idea would you pick?
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Here&apos;s a real matchup from the arena. No signup needed to look.
+              </p>
+            </div>
+          </ScrollReveal>
+          <LiveBattlePreview />
+        </div>
+      </section>
+
+      {/* ── What you get — for voters and founders ── */}
+      <section className="relative border-b border-border/30">
+        <LikelyrBackground className="opacity-10" />
+        <div className="relative z-10 mx-auto max-w-5xl px-6 py-12 sm:py-16">
+          <ScrollReveal animation="reveal-up">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-fire text-center">What you get</p>
+            <h2 className="text-2xl font-black sm:text-3xl font-[family-name:var(--font-chakra)] text-center mb-10">
+              two ways to play.
+            </h2>
+          </ScrollReveal>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <ScrollReveal animation="reveal-left" delay={100}>
+              <div className="glass-card p-6 h-full">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 ring-1 ring-blue-400/25">
+                    <Swords className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-black font-[family-name:var(--font-chakra)]">As a voter</h3>
+                </div>
+                <ul className="space-y-3">
+                  {[
+                    "See real startup ideas before they launch",
+                    "Build a predictor score as you vote",
+                    "Find out if your instincts match the crowd",
+                    "Climb the voter leaderboard",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-fire" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/battle"
+                  className="mt-6 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-fire hover:underline"
+                >
+                  Start voting <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal animation="reveal-right" delay={100}>
+              <div className="glass-card p-6 h-full">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-fire/10 ring-1 ring-fire/25">
+                    <Rocket className="h-4 w-4 text-fire" />
+                  </div>
+                  <h3 className="text-lg font-black font-[family-name:var(--font-chakra)]">As a founder</h3>
+                </div>
+                <ul className="space-y-3">
+                  {[
+                    "Test your idea against real competition",
+                    "Get an Elo rating based on crowd reaction",
+                    "See where voters hesitate — your weak spot",
+                    "Share challenge links for feedback",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-fire" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/submit"
+                  className="mt-6 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-fire hover:underline"
+                >
+                  Submit your idea <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -112,10 +212,10 @@ export default function HomePage() {
               Choose your route
             </p>
             <h2 className="max-w-3xl text-3xl font-black sm:text-4xl font-[family-name:var(--font-chakra)]">
-              battle for fun, or submit an idea and compete.
+              vote on ideas, or put yours in the arena.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              This is the product in motion. Pick a lane when you are ready, or keep scrolling and learn the rest.
+              Pick a lane. Both are free to start.
             </p>
           </ScrollReveal>
 
@@ -254,7 +354,7 @@ export default function HomePage() {
           <ScrollReveal animation="reveal-up">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-fire text-center">How it works</p>
             <h2 className="mb-14 text-3xl font-black sm:text-4xl font-[family-name:var(--font-chakra)] text-center">
-              three steps. thirty seconds.
+              submit. battle. climb.
             </h2>
           </ScrollReveal>
 
@@ -263,9 +363,9 @@ export default function HomePage() {
             <div className="hidden sm:block absolute top-12 left-[50%] right-0 h-px bg-gradient-to-r from-fire/20 to-transparent" />
 
             {[
-              { num: "01", title: "submit your idea", desc: "name. pitch. target customer. revenue model. 30 seconds. no decks.", icon: "✦" },
-              { num: "02", title: "battle for votes", desc: "your idea goes head to head. strangers pick the one likelier to make money.", icon: "⚔" },
-              { num: "03", title: "climb or learn", desc: "win battles. gain elo. rise through the ranks. or find the weak spot fast.", icon: "◆" },
+              { num: "01", title: "drop your idea", desc: "name, pitch, target buyer, revenue model. 30 seconds. no pitch decks needed.", icon: "✦" },
+              { num: "02", title: "get tested", desc: "your idea is matched against others. real people pick which they'd actually pay for.", icon: "⚔" },
+              { num: "03", title: "see the signal", desc: "win battles, gain Elo, rise through the ranks. or find your weak spot and iterate.", icon: "◆" },
             ].map((step, i) => (
               <ScrollReveal key={step.num} animation="reveal-up" delay={i * 150}>
                 <div className="perspective-card">
@@ -322,26 +422,29 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-gradient-to-br from-fire/5 via-transparent to-ember/5 pointer-events-none" />
               <div className="relative z-10">
                 <h2 className="text-3xl font-black sm:text-4xl font-[family-name:var(--font-chakra)]">
-                  find out what survives the crowd.
+                  ready to find out?
                 </h2>
                 <p className="mt-3 text-muted-foreground">
-                  no judges. no panels. just fast comparisons, public rankings, and predictor scores.
+                  See how your idea stacks against the crowd — or discover ideas you never thought of.
                 </p>
                 <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                   <Link
-                    href="/submit"
+                    href="/battle"
                     className="group inline-flex items-center gap-2.5 rounded-none bg-fire px-8 py-4 text-base font-bold uppercase tracking-wider text-fire-foreground shadow-[0_0_40px_rgba(220,60,30,0.3)] transition-all hover:shadow-[0_0_60px_rgba(220,60,30,0.5)] hover:scale-[1.03] active:scale-[0.98]"
                   >
-                    submit your idea
+                    see a battle
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                   <Link
-                    href="/battle"
+                    href="/submit"
                     className="inline-flex items-center gap-2 rounded-none border border-border/60 px-8 py-4 text-base font-semibold uppercase tracking-wider transition-all hover:bg-panel hover:border-fire/30 hover:shadow-[0_0_20px_rgba(220,60,30,0.1)]"
                   >
-                    start voting
+                    submit your idea
                   </Link>
                 </div>
+                <p className="mt-4 text-xs text-muted-foreground/70">
+                  Free to browse. No credit card. No commitment.
+                </p>
               </div>
             </div>
           </ScrollReveal>
